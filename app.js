@@ -38,7 +38,7 @@
       id: "19:00",
       title: "19:00 グループ",
       rooms: [
-        { id: "masuge", name: "ますげ", speed: "N", allergy: "プレ・スタンダード" }
+        { id: "masuge", name: "きすげ", speed: "N", allergy: "プレ・スタンダード" }
       ]
     }
   ];

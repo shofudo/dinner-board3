@@ -32,3 +32,13 @@ button { cursor: pointer; }
 .dotbtn.is-on { background: #8fd; border-color: #5ab; }
 .dotlabel { font-size: 12px; opacity: .7; margin-top: 2px; }
 .cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+/* 各セルの上に出す料理名（部屋ごとに変えられる） */
+.dishname {
+  font-size: 12px;
+  line-height: 1.2;
+  min-height: 28px;   /* 2行まで並んでも高さが揃う */
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.cell { gap: 4px; }   /* 文字と丸の間を少し広げる */
