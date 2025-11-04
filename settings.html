@@ -63,12 +63,15 @@
   ${Array.from({length:12}, (_,i)=>`<option>${i+1}</option>`).join("")}
 </select>
         <div>
-          <select id="custom-plan">
-            <option value="">未選択</option>
-            <option>スタンダード</option>
-            <option>ステーキ</option>
-            <option>しゃぶしゃぶ</option>
-          </select>
+         <select id="custom-plan">
+  <option value="">未選択</option>
+  <option>スタンダード</option>
+  <option>和牛懐石</option>
+  <option>ステーキ</option>
+  <option>しゃぶしゃぶ</option>
+  <option>連泊</option>
+</select>
+
         </div>
         <div>
           <select id="custom-dinner">
@@ -105,7 +108,7 @@
     ];
 
     // プラン候補（必要に応じて後で増減）
-    const PLANS = ["スタンダード","ステーキ","しゃぶしゃぶ"];
+const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶしゃぶ","連泊"];
 
     // 夕食開始 候補（今回の追加）
     const DINNER_TIMES = ["18:00", "18:30", "19:00"];
