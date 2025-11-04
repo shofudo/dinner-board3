@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>本日の設定</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#f7f7f7; --card:#fff; --line:#e5e5e5;
+      --text:#222; --muted:#666; --accent:#1e88e5;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;}
+    header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;z-index:10;}
+    header h1{margin:0;font-size:18px;}
+    main{padding:16px;max-width:1100px;margin:0 auto;}
+    .section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;}
+    .section h2{margin:0 0 10px 0;font-size:16px}
+    .muted{color:var(--muted);font-size:12px}
+    /* ▼ 列構成を6列に（夕食開始を追加） */
+    .row-head{display:grid;grid-template-columns:28px 130px 82px 140px 120px 1fr;gap:8px;padding:8px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .room-row{display:grid;grid-template-columns:28px 130px 82px 140px 120px 1fr;gap:8px;align-items:center;padding:10px;border-bottom:1px dashed var(--line)}
+    .room-row:last-child{border-bottom:none}
+    .room-name{font-weight:600}
+    input[type="number"], select, input[type="text"], textarea{
+      width:100%; box-sizing:border-box; padding:8px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:14px;
+    }
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .note{font-size:12px;color:var(--muted);margin-top:6px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>本日の設定</h1>
+  </header>
+
+  <main>
+    <section class="section">
+      <h2>部屋ごとの設定</h2>
+      <div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
+
+      <!-- 見出し行 -->
+      <div class="row-head">
+        <div>選</div>
+        <div>部屋名</div>
+        <div>人数</div>
+        <div>プラン</div>
+        <div>夕食開始</div>
+        <div>お祝い・アレルギー</div>
+      </div>
+
+      <!-- ▼ 10部屋（固定）＋ 最下段にカスタム -->
+      <!-- 行の書式：チェック / 部屋名 / 人数 / プラン / 夕食開始 / お祝い・アレルギー -->
+      <div id="room-rows"></div>
+
+      <!-- カスタム行 -->
+      <div class="room-row">
+        <div><input type="checkbox" id="use-custom"></div>
+        <div><input type="text" id="custom-room-name" placeholder="カスタム部屋名"></div>
+        <div><input type="number" min="0" id="custom-guest" placeholder="人数"></div>
+        <div>
+          <select id="custom-plan">
+            <option value="">未選択</option>
+            <option>スタンダード</option>
+            <option>ステーキ</option>
+            <option>しゃぶしゃぶ</option>
+          </select>
+        </div>
+        <div>
+          <select id="custom-dinner">
+            <option value="">未選択</option>
+            <option>18:00</option>
+            <option>18:30</option>
+            <option>19:00</option>
+          </select>
+        </div>
+        <div>
+          <input type="text" id="custom-cele" placeholder="お祝い内容（例：誕生日）">
+          <input type="text" id="custom-allergy" placeholder="アレルギー（例：甲殻類）" style="margin-top:8px">
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="save-btn" disabled>保存（次の回で有効化）</button>
+        <button class="btn" id="to-board-btn" disabled>発注ボードへ（次の回で有効化）</button>
+      </div>
+      <div class="note">※ いまは見た目確認のみ。保存・反映は次回のステップで入れます。</div>
+    </section>
+  </main>
+
+  <script>
+    // 固定の10部屋
+    const ROOMS = [
+      "やまぶき","なでしこ","つばき","やしお","さくら",
+      "ふじ","さつき","きすげ","ゆり","はぎ"
+    ];
+
+    // プラン候補（必要に応じて後で増減）
+    const PLANS = ["スタンダード","ステーキ","しゃぶしゃぶ"];
+
+    // 夕食開始 候補（今回の追加）
+    const DINNER_TIMES = ["18:00", "18:30", "19:00"];
+
+    // --- 行を描画 ---
+    const wrap = document.getElementById('room-rows');
+
+    ROOMS.forEach((name, idx) => {
+      const row = document.createElement('div');
+      row.className = 'room-row';
+      row.innerHTML = `
+        <div><input type="checkbox" id="use-${idx}"></div>
+        <div class="room-name">${name}</div>
+        <div><input type="number" min="0" id="guest-${idx}" placeholder="人数"></div>
+        <div>
+          <select id="plan-${idx}">
+            <option value="">未選択</option>
+            ${PLANS.map(p=>`<option>${p}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <select id="dinner-${idx}">
+            <option value="">未選択</option>
+            ${DINNER_TIMES.map(t=>`<option>${t}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <input type="text" id="cele-${idx}" placeholder="お祝い（任意）">
+          <input type="text" id="allergy-${idx}" placeholder="アレルギー（任意）" style="margin-top:8px">
+        </div>
+      `;
+      wrap.appendChild(row);
+    });
+
+    // 今日はUI確認のみ。ボタンは無効化のまま。
+  </script>
+</body>
+</html>
