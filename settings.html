@@ -143,63 +143,52 @@
     });
 
 
-    // ▼ 保存ボタンを有効化し、押したら localStorage に保存
-    const saveBtn = document.getElementById('save-btn');
-    const toBoardBtn = document.getElementById('to-board-btn');
-    saveBtn.disabled = false;
-    toBoardBtn.disabled = false;
+   // ▼ 保存ボタンと「発注ボードへ」を有効化
+const saveBtn = document.getElementById('save-btn');
+const toBoardBtn = document.getElementById('to-board-btn');
+if (saveBtn) saveBtn.disabled = false;
+if (toBoardBtn) toBoardBtn.disabled = false;
 
-    function collectRows(){
-      const items = [];
-      ROOMS.forEach((name, idx) => {
-        const enabled = document.getElementById(`use-${idx}`).checked;
-        const guest = Number(document.getElementById(`guest-${idx}`).value || 0);
-        const plan = document.getElementById(`plan-${idx}`).value || "";
-        const dinner = document.getElementById(`dinner-${idx}`).value || "";
-        const cake = document.getElementById(`cake-${idx}`).checked;
-        const plate = document.getElementById(`plate-${idx}`).checked;
-        const allergy = document.getElementById(`allergy-${idx}`).value || "";
-        if (enabled) {
-          items.push({ name, guest, plan, dinner, cake, plate, allergy });
-        }
+function collectRows(){
+  const items = [];
+  ROOMS.forEach((name, idx) => {
+    const enabled = document.getElementById(`use-${idx}`).checked;
+    const guest = Number(document.getElementById(`guest-${idx}`).value || 0);
+    const plan = document.getElementById(`plan-${idx}`).value || "";
+    const dinner = document.getElementById(`dinner-${idx}`).value || "";
+    const cake = document.getElementById(`cake-${idx}`).checked;
+    const plate = document.getElementById(`plate-${idx}`).checked;
+    const allergy = document.getElementById(`allergy-${idx}`).value || "";
+    if (enabled) items.push({ name, guest, plan, dinner, cake, plate, allergy });
+  });
+  // カスタム
+  if (document.getElementById('use-custom')?.checked){
+    const name = document.getElementById('custom-room-name').value.trim();
+    if (name){
+      items.push({
+        name,
+        guest: Number(document.getElementById('custom-guest').value || 0),
+        plan: document.getElementById('custom-plan').value || "",
+        dinner: document.getElementById('custom-dinner').value || "",
+        cake: document.getElementById('custom-cake').checked,
+        plate: document.getElementById('custom-plate').checked,
+        allergy: document.getElementById('custom-allergy').value || ""
       });
-
-      // カスタム
-      if (document.getElementById('use-custom').checked){
-        const name = document.getElementById('custom-room-name').value.trim();
-        if (name){
-          items.push({
-            name,
-            guest: Number(document.getElementById('custom-guest').value || 0),
-            plan: document.getElementById('custom-plan').value || "",
-            dinner: document.getElementById('custom-dinner').value || "",
-            cake: document.getElementById('custom-cake').checked,
-            plate: document.getElementById('custom-plate').checked,
-            allergy: document.getElementById('custom-allergy').value || ""
-          });
-        }
-      }
-      return items;
     }
+  }
+  return items;
+}
 
-    saveBtn.addEventListener('click', () => {
-      const payload = {
-        date: new Date().toISOString().slice(0,10), // YYYY-MM-DD
-        rooms: collectRows()
-      };
-      localStorage.setItem('today-settings.v1', JSON.stringify(payload));
-      alert('保存しました（today-settings.v1）');
-    });
+function saveSettingsAnd(option){ // option: "stay" | "to-board"
+  const payload = { date: new Date().toISOString().slice(0,10), rooms: collectRows() };
+  localStorage.setItem('today-settings.v1', JSON.stringify(payload));
+  if (option === "to-board") location.href = './index.html?nocache=1';
+  else alert('保存しました（today-settings.v1）');
+}
 
-    toBoardBtn.addEventListener('click', () => {
-      // 保存してから発注ボードへ
-      const payload = {
-        date: new Date().toISOString().slice(0,10),
-        rooms: collectRows()
-      };
-      localStorage.setItem('today-settings.v1', JSON.stringify(payload));
-      location.href = './index.html?nocache=1';
-    });
+saveBtn?.addEventListener('click', () => saveSettingsAnd("stay"));
+toBoardBtn?.addEventListener('click', () => saveSettingsAnd("to-board"));
+
 
   </script>
 </body>
