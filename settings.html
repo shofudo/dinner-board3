@@ -16,24 +16,48 @@
     .section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;}
     .section h2{margin:0 0 10px 0;font-size:16px}
     .muted{color:var(--muted);font-size:12px}
-    /* ▼ 列構成を6列に（夕食開始を追加） */
-  .room-row { gap: 10px; padding: 8px 10px; }
-.row-head { gap: 10px; }
+/* ▼ 列構成を6列（コンパクト表示） */
+.row-head{
+  display:grid;
+  grid-template-columns: 28px 130px 110px 140px 110px 1fr;
+  gap:8px;
+  padding:6px 8px;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  color:var(--muted);
+}
+.room-row{
+  display:grid;
+  grid-template-columns: 28px 130px 110px 140px 110px 1fr;
+  gap:8px;
+  align-items:center;
+  padding:6px 8px;
+  border-bottom:1px dashed var(--line);
+}
+.room-row:last-child{ border-bottom:none; }
 
+/* 入力の基本サイズ（小さめ） */
 .room-row select,
 .room-row input[type="number"],
-.room-row input[type="text"] {
-  height: 36px;
-  padding: 6px 10px;
-  border-radius: 8px;
+.room-row input[type="text"]{
+  height:34px;
+  padding:4px 8px;
+  border-radius:8px;
+  width:100%;
+  box-sizing:border-box;
 }
 
-.guest-wrap { display: inline-flex; gap: 6px; align-items: center; }
-.guest-wrap select { width: 110px; }
-.guest-wrap input[type="number"] { width: 64px; }
+/* 人数の小さな並び（プルダウン＋数字） */
+.guest-wrap{ display:inline-flex; gap:6px; align-items:center; }
+.guest-wrap select{ width:120px; }          /* 広げたければ 130〜140 に */
+.guest-wrap input[type="number"]{ width:72px; } /* 広げたければ 80〜90 に */
 
-.room-row label { margin-right: 8px; }
-[id^="allergy-"] { width: 100%; }
+/* ケーキ/プレートの並び */
+.room-row label{ margin:0 8px 0 0; white-space:nowrap; }
+
+/* アレルギー欄は最後の列いっぱい */
+[id^="allergy-"]{ width:100%; }
+
 
     }
     .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -50,21 +74,24 @@
   <main>
     <section class="section">
       <h2>部屋ごとの設定</h2>
-      <div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
+   <div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
 
-      <!-- 見出し行 -->
-      <div class="row-head">
-        <div>選</div>
-        <div>部屋名</div>
-        <div>人数</div>
-        <div>プラン</div>
-        <div>夕食開始</div>
-        <div>お祝い・アレルギー</div>
-      </div>
+<div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
 
-      <!-- ▼ 10部屋（固定）＋ 最下段にカスタム -->
-      <!-- 行の書式：チェック / 部屋名 / 人数 / プラン / 夕食開始 / お祝い・アレルギー -->
-      <div id="room-rows"></div>
+<!-- 見出し行（横並びヘッダー） -->
+<div class="row-head">
+  <div>選</div>
+  <div>部屋名</div>
+  <div>人数</div>
+  <div>プラン</div>
+  <div>夕食開始</div>
+  <div>お祝い・アレルギー</div>
+</div>
+
+<!-- 各部屋の行が入る置き場 -->
+<div id="room-rows"></div>
+
+
 
       <!-- カスタム行 -->
       <div class="room-row">
