@@ -122,10 +122,22 @@ const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶし�
       row.innerHTML = `
         <div><input type="checkbox" id="use-${idx}"></div>
         <div class="room-name">${name}</div>
-<select id="guest-${idx}">
-  <option value="">人数</option>
-  ${Array.from({length:12}, (_,i)=>`<option>${i+1}</option>`).join("")}
+<!-- 人数（2〜6 ＋ カスタマイズ） -->
+<select id="guest-${idx}" onchange="document.getElementById('guestCustom-${idx}').style.display=(this.value==='custom'?'inline-block':'none')">
+  <option value="" selected>人数</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="custom">カスタマイズ</option>
 </select>
+<input type="number"
+       id="guestCustom-${idx}"
+       min="1" max="99"
+       placeholder="人数を入力"
+       style="width:72px; display:none; margin-left:6px;" />
+
         <div>
           <select id="plan-${idx}">
             <option value="">未選択</option>
@@ -229,7 +241,10 @@ function collectRows(){
   const items = [];
   ROOMS.forEach((name, idx) => {
     const enabled = document.getElementById(`use-${idx}`).checked;
-    const guest = Number(document.getElementById(`guest-${idx}`).value || 0);
+const gSel = document.getElementById(`guest-${idx}`);
+const guest = (gSel.value === 'custom')
+  ? Number(document.getElementById(`guestCustom-${idx}`).value || 0)
+  : Number(gSel.value || 0);
     const plan = document.getElementById(`plan-${idx}`).value || "";
     const dinner = document.getElementById(`dinner-${idx}`).value || "";
     const cake = document.getElementById(`cake-${idx}`).checked;
