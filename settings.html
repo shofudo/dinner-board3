@@ -72,83 +72,76 @@
   </header>
 
   <main>
-    <section class="section">
-      <h2>部屋ごとの設定</h2>
-   <div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
-
-<div class="muted">チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。</div>
-
-<!-- 見出し行（横並びヘッダー） -->
-<div class="row-head">
-  <div>選</div>
-  <div>部屋名</div>
-  <div>人数</div>
-  <div>プラン</div>
-  <div>夕食開始</div>
-  <div>お祝い・アレルギー</div>
-</div>
-
-<!-- 各部屋の行が入る置き場 -->
-<div id="room-rows"></div>
-
-
-
-      <!--<!-- カスタム行 -->
-<div class="room-row">
-  <div><input type="checkbox" id="use-custom"></div>
-  <div><input type="text" id="custom-room-name" placeholder="カスタム部屋名"></div>
-
-  <!-- 人数（2〜6＋カスタマイズ） -->
-  <div class="guest-wrap" style="display:inline-flex; gap:6px; align-items:center;">
-    <select id="custom-guest"
-            onchange="document.getElementById('custom-guestNum').style.display = (this.value==='custom') ? 'inline-block' : 'none'">
-      <option value="" selected>人数</option>
-      <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-      <option value="custom">カスタマイズ</option>
-    </select>
-    <input type="number"
-           id="custom-guestNum"
-           min="1" max="12"
-           placeholder="人数を入力"
-           style="width:72px; display:none; margin-left:6px;" />
+<section class="section">
+  <h2>部屋ごとの設定</h2>
+  <div class="muted">
+    チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。
   </div>
 
-  <div>
-    <select id="custom-plan">
-      <option value="">未選択</option>
-      <option>スタンダード</option>
-      <option>和牛懐石</option>
-      <option>ステーキ</option>
-      <option>しゃぶしゃぶ</option>
-      <option>連泊</option>
-    </select>
+  <!-- 見出し行（横並びヘッダー） -->
+  <div class="row-head">
+    <div>選</div>
+    <div>部屋名</div>
+    <div>人数</div>
+    <div>プラン</div>
+    <div>夕食開始</div>
+    <div>お祝い・アレルギー</div>
   </div>
-  <div>
-    <select id="custom-dinner">
-      <option value="">未選択</option>
-      <option>18:00</option>
-      <option>18:30</option>
-      <option>19:00</option>
-    </select>
-  </div>
-  <div>
-    <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-      <input type="checkbox" id="custom-cake">ケーキ
-    </label>
-    <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-      <input type="checkbox" id="custom-plate">プレート
-    </label>
-    <input type="text" id="custom-allergy" placeholder="アレルギー（例：甲殻類）" style="margin-top:8px;width:100%">
-  </div>
-</div>
 
- カスタム行 -->
-      <div class="room-row">
-        <div><input type="checkbox" id="use-custom"></div>
-        <div><input type="text" id="custom-room-name" placeholder="カスタム部屋名"></div>
-<select id="custom-guest">
-  <option value="">人数</option>
-  ${Array.from({length:12}, (_,i)=>`<option>${i+1}</option>`).join("")}
+  <!-- 各部屋の行が入る置き場（JSで10行を注入） -->
+  <div id="room-rows"></div>
+
+  <!-- カスタム行 -->
+  <div class="room-row">
+    <div><input type="checkbox" id="use-custom"></div>
+    <div><input type="text" id="custom-room-name" placeholder="カスタム部屋名"></div>
+
+    <!-- 人数（2〜6＋カスタマイズ） -->
+    <div class="guest-wrap" style="display:inline-flex; gap:6px; align-items:center;">
+      <select id="custom-guest"
+              onchange="document.getElementById('custom-guestNum').style.display = (this.value==='custom') ? 'inline-block' : 'none'">
+        <option value="" selected>人数</option>
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+        <option value="custom">カスタマイズ</option>
+      </select>
+      <input type="number" id="custom-guestNum" min="1" max="12"
+             placeholder="人数を入力" style="width:72px; display:none; margin-left:6px;">
+    </div>
+
+    <div>
+      <select id="custom-plan">
+        <option value="">未選択</option>
+        <option>スタンダード</option>
+        <option>和牛懐石</option>
+        <option>ステーキ</option>
+        <option>しゃぶしゃぶ</option>
+        <option>連泊</option>
+      </select>
+    </div>
+    <div>
+      <select id="custom-dinner">
+        <option value="">未選択</option>
+        <option>18:00</option><option>18:30</option><option>19:00</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+        <input type="checkbox" id="custom-cake">ケーキ
+      </label>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+        <input type="checkbox" id="custom-plate">プレート
+      </label>
+      <input type="text" id="custom-allergy" placeholder="アレルギー（例：甲殻類）" style="margin-top:8px;width:100%">
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="save-btn" disabled>保存（次の回で有効化）</button>
+    <button class="btn" id="to-board-btn" disabled>発注ボードへ（次の回で有効化）</button>
+  </div>
+  <div class="note">※ いまは見た目確認のみ。保存・反映は次回のステップで入れます。</div>
+</section>
+
 </select>
         <div>
          <select id="custom-plan">
@@ -189,67 +182,63 @@
   </main>
 
   <script>
-    // 固定の10部屋
-    const ROOMS = [
-      "やまぶき","なでしこ","つばき","やしお","さくら",
-      "ふじ","さつき","きすげ","ゆり","はぎ"
-    ];
+// 固定の10部屋
+const ROOMS = ["やまぶき","なでしこ","つばき","やしお","さくら",
+               "ふじ","さつき","きすげ","ゆり","はぎ"];
 
-    // プラン候補（必要に応じて後で増減）
+// プラン候補
 const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶしゃぶ","連泊"];
 
-    // 夕食開始 候補（今回の追加）
-    const DINNER_TIMES = ["18:00", "18:30", "19:00"];
+// 夕食開始 候補
+const DINNER_TIMES = ["18:00", "18:30", "19:00"];
 
-    // --- 行を描画 ---
-    const wrap = document.getElementById('room-rows');
+// --- 行を描画 ---
+const wrap = document.getElementById('room-rows');
 
-    ROOMS.forEach((name, idx) => {
-      const row = document.createElement('div');
-      row.className = 'room-row';
-      row.innerHTML = `
-        <div><input type="checkbox" id="use-${idx}"></div>
-        <div class="room-name">${name}</div>
-<!-- 人数（2～6＋カスタマイズ） -->
-<div class="guest-wrap" style="display:inline-flex; gap:6px; align-items:center;">
-  <select id="guest-${idx}"
-          onchange="document.getElementById('guestCustom-${idx}').style.display = (this.value==='custom') ? 'inline-block' : 'none'">
-    <option value="" selected>人数</option>
-    ${Array.from({length:5}, (_,i)=>`<option>${i+2}</option>`).join("")}
-    <option value="custom">カスタマイズ</option>
-  </select>
+ROOMS.forEach((name, idx) => {
+  const row = document.createElement('div');
+  row.className = 'room-row';
+  row.innerHTML = `
+    <div><input type="checkbox" id="use-${idx}"></div>
+    <div class="room-name">${name}</div>
 
-  <input type="number"
-         id="guestCustom-${idx}"
-         min="1" max="12"
-         placeholder="人数を入力"
-         style="width:72px; display:none; margin-left:6px;" />
-</div>
+    <!-- 人数（2〜6＋カスタマイズ） -->
+    <div class="guest-wrap" style="display:inline-flex; gap:6px; align-items:center;">
+      <select id="guest-${idx}"
+              onchange="document.getElementById('guestCustom-${idx}').style.display = (this.value==='custom') ? 'inline-block' : 'none'">
+        <option value="" selected>人数</option>
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+        <option value="custom">カスタマイズ</option>
+      </select>
+      <input type="number" id="guestCustom-${idx}" min="1" max="12"
+             placeholder="人数を入力" style="width:72px; display:none; margin-left:6px;">
+    </div>
 
+    <div>
+      <select id="plan-${idx}">
+        <option value="">未選択</option>
+        ${PLANS.map(p=>`<option>${p}</option>`).join("")}
+      </select>
+    </div>
+    <div>
+      <select id="dinner-${idx}">
+        <option value="">未選択</option>
+        ${DINNER_TIMES.map(t=>`<option>${t}</option>`).join("")}
+      </select>
+    </div>
+    <div>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+        <input type="checkbox" id="cake-${idx}">ケーキ
+      </label>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+        <input type="checkbox" id="plate-${idx}">プレート
+      </label>
+      <input type="text" id="allergy-${idx}" placeholder="アレルギー（任意）" style="margin-top:8px;width:100%">
+    </div>
+  `;
+  wrap.appendChild(row);
+});
 
-          <select id="plan-${idx}">
-            <option value="">未選択</option>
-            ${PLANS.map(p=>`<option>${p}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <select id="dinner-${idx}">
-            <option value="">未選択</option>
-            ${DINNER_TIMES.map(t=>`<option>${t}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-            <input type="checkbox" id="cake-${idx}">ケーキ
-          </label>
-          <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-            <input type="checkbox" id="plate-${idx}">プレート
-          </label>
-          <input type="text" id="allergy-${idx}" placeholder="アレルギー（任意）" style="margin-top:8px;width:100%">
-        </div>
-      `;
-      wrap.appendChild(row);
-    });
 
     // ▼▼▼ ここから追加：保存済みの today-settings.v1 をフォームに反映 ▼▼▼
     function loadSaved(){
@@ -327,9 +316,8 @@ const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶし�
         const plate = document.getElementById('custom-plate');
         if(cake) cake.checked = !!customOnly.cake;
         if(plate) plate.checked = !!customOnly.plate;
-    setValueIfExists(document.getElementById('custom-guest'), customOnly.guest ?? '');
+setValueIfExists(document.getElementById('custom-guest'), customOnly.guest ?? '');
 
-// もし人数が 2〜6 ならセレクトに入れる。1 以上で 2〜6 以外ならカスタム表示＆数値欄も表示
 (() => {
   const g = Number(customOnly.guest || 0);
   const gSel = document.getElementById('custom-guest');
@@ -348,6 +336,7 @@ const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶし�
     gInp.style.display = 'none';
   }
 })();
+
 
     // ▲▲▲ ここまで追加 ▲▲▲
 
@@ -376,20 +365,17 @@ const guest = (gSel.value === 'custom')
 if (document.getElementById('use-custom')?.checked){
   const name = document.getElementById('custom-room-name').value.trim();
   if (name){
-    const cgSel = document.getElementById('custom-guest');
-    const cGuest = (cgSel.value === 'custom')
-      ? Number(document.getElementById('custom-guestNum').value || 0)
-      : Number(cgSel.value || 0);
+   const cgSel = document.getElementById('custom-guest');
+const cGuest = (cgSel.value === 'custom')
+  ? Number(document.getElementById('custom-guestNum').value || 0)
+  : Number(cgSel.value || 0);
 
-    items.push({
-      name,
-      guest: cGuest,
-      plan: document.getElementById('custom-plan').value || "",
-      dinner: document.getElementById('custom-dinner').value || "",
-      cake: document.getElementById('custom-cake').checked,
-      plate: document.getElementById('custom-plate').checked,
-      allergy: document.getElementById('custom-allergy').value || ""
-    });
+items.push({
+  name,
+  guest: cGuest,
+  // …（plan/dinner/cake/plate/allergy はそのまま）
+});
+
   }
 }
 
