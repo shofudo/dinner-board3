@@ -72,7 +72,7 @@
   </header>
 
   <main>
-<section class="section">
+<section id="settings-root" class="section">
   <h2>部屋ごとの設定</h2>
   <div class="muted">
     チェックした部屋だけを「発注ボード」に反映する想定です（保存は次のステップで実装）。
@@ -136,7 +136,7 @@
   </div>
 
   <div class="controls">
-    <button class="btn primary" id="save-btn" disabled>保存（次の回で有効化）</button>
+<button id="save-next-btn" class="btn primary">保存（次の回で有効化）</button>
     <button class="btn" id="to-board-btn" disabled>発注ボードへ（次の回で有効化）</button>
   </div>
   <div class="note">※ いまは見た目確認のみ。保存・反映は次回のステップで入れます。</div>
@@ -260,6 +260,80 @@ const PLANS = ["スタンダード", "和牛懐石", "ステーキ", "しゃぶ�
     });
   }
 });
+// ===== 本日の設定 保存/読込（最小実装） =====
+(() => {
+  const STORAGE_KEY = 'dinner.today.settings.v1';
+
+  function saveToStorage(data){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(e){
+      console.warn('localStorage に保存できませんでした', e);
+    }
+  }
+
+  function loadFromStorage(){
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch(e){
+      console.warn('localStorage の読込でエラー', e);
+      return null;
+    }
+  }
+
+  // 画面上の全 input/select/textarea を拾って値を集める
+  function collectSettings(){
+    const root = document.getElementById('settings-root') || document;
+    const nodes = root.querySelectorAll('input, select, textarea');
+    const data = {};
+    let auto = 0;
+    nodes.forEach(el => {
+      const key = el.name || el.id || (el.dataset.key ||= `k${auto++}`);
+      let val;
+      if (el.type === 'checkbox') {
+        val = el.checked ? 1 : 0;
+      } else {
+        val = el.value;
+      }
+      data[key] = val;
+    });
+    return data;
+  }
+
+  // 保存してあった値を画面に反映
+  function applySettings(data){
+    if(!data) return;
+    const root = document.getElementById('settings-root') || document;
+    const nodes = root.querySelectorAll('input, select, textarea');
+    nodes.forEach(el => {
+      const key = el.name || el.id || el.dataset.key;
+      if (key in data){
+        if (el.type === 'checkbox') {
+          el.checked = !!data[key];
+        } else {
+          el.value = data[key];
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1) ページを開いたら前回保存分を反映
+    applySettings(loadFromStorage());
+
+    // 2) 「保存（次の回で有効化）」で保存
+    const saveBtn = document.getElementById('save-next-btn');
+    if (saveBtn){
+      saveBtn.addEventListener('click', () => {
+        const data = collectSettings();
+        saveToStorage(data);
+        alert('保存しました。次の回で有効になります。');
+      });
+    }
+  });
+})();
+
 </script>
 
 </body>
