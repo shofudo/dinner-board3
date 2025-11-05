@@ -122,23 +122,23 @@ const PLANS = ["スタンダード","和牛懐石","ステーキ","しゃぶし�
       row.innerHTML = `
         <div><input type="checkbox" id="use-${idx}"></div>
         <div class="room-name">${name}</div>
-<!-- 人数（2〜6 ＋ カスタマイズ） -->
-<select id="guest-${idx}" onchange="document.getElementById('guestCustom-${idx}').style.display=(this.value==='custom'?'inline-block':'none')">
-  <option value="" selected>人数</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
-  <option value="5">5</option>
-  <option value="6">6</option>
-  <option value="custom">カスタマイズ</option>
-</select>
-<input type="number"
-       id="guestCustom-${idx}"
-       min="1" max="99"
-       placeholder="人数を入力"
-       style="width:72px; display:none; margin-left:6px;" />
+<!-- 人数（2～6＋カスタマイズ） -->
+<div class="guest-wrap" style="display:inline-flex; gap:6px; align-items:center;">
+  <select id="guest-${idx}"
+          onchange="document.getElementById('guestCustom-${idx}').style.display = (this.value==='custom') ? 'inline-block' : 'none'">
+    <option value="" selected>人数</option>
+    ${Array.from({length:5}, (_,i)=>`<option>${i+2}</option>`).join("")}
+    <option value="custom">カスタマイズ</option>
+  </select>
 
-        <div>
+  <input type="number"
+         id="guestCustom-${idx}"
+         min="1" max="12"
+         placeholder="人数を入力"
+         style="width:72px; display:none; margin-left:6px;" />
+</div>
+
+
           <select id="plan-${idx}">
             <option value="">未選択</option>
             ${PLANS.map(p=>`<option>${p}</option>`).join("")}
@@ -280,6 +280,16 @@ function saveSettingsAnd(option){ // option: "stay" | "to-board"
 saveBtn?.addEventListener('click', () => saveSettingsAnd("stay"));
 toBoardBtn?.addEventListener('click', () => saveSettingsAnd("to-board"));
 
+// ▼ 人数のカスタマイズ欄の表示切り替え ▼
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id && e.target.id.startsWith('guest-')) {
+    const idx = e.target.id.split('-')[1];
+    const customInput = document.getElementById(`guestCustom-${idx}`);
+    if (customInput) {
+      customInput.style.display = e.target.value === 'custom' ? 'inline-block' : 'none';
+    }
+  }
+});
 
   </script>
 </body>
