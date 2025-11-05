@@ -94,94 +94,100 @@
     </section>
   </main>
 
-  <script>
-    // 固定の10部屋
-    const ROOMS = [
-      "やまぶき","なでしこ","つばき","やしお","さくら",
-      "ふじ","さつき","きすげ","ゆり","はぎ"
-    ];
+ <script>
+document.addEventListener('DOMContentLoaded', () => {
+  // 固定の10部屋
+  const ROOMS = [
+    "やまぶき","なでしこ","つばき","やしお","さくら",
+    "ふじ","さつき","きすげ","ゆり","はぎ"
+  ];
 
-    // プラン候補（必要に応じて後で増減）
-    const PLANS = ["スタンダード","ステーキ","しゃぶしゃぶ"];
+  // プラン候補
+  const PLANS = ["スタンダード","ステーキ","しゃぶしゃぶ"];
 
-    // 夕食開始 候補（今回の追加）
-    const DINNER_TIMES = ["18:00", "18:30", "19:00"];
+  // 夕食開始 候補
+  const DINNER_TIMES = ["18:00", "18:30", "19:00"];
 
-    // --- 行を描画 ---
-    const wrap = document.getElementById('room-rows');
+  // --- 行を描画 ---
+  const wrap = document.getElementById('room-rows');
+  if (!wrap) {
+    console.error('room-rows が見つかりません。HTMLに <div id="room-rows"></div> があるか確認してください。');
+    return;
+  }
 
+  ROOMS.forEach((name, idx) => {
+    const row = document.createElement('div');
+    row.className = 'room-row';
+    row.innerHTML = `
+      <div><input type="checkbox" id="use-${idx}"></div>
+      <div class="room-name">${name}</div>
+      <div><input type="number" min="0" id="guest-${idx}" placeholder="人数"></div>
+      <div>
+        <select id="plan-${idx}">
+          <option value="">未選択</option>
+          ${PLANS.map(p=>`<option>${p}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <select id="dinner-${idx}">
+          <option value="">未選択</option>
+          ${DINNER_TIMES.map(t=>`<option>${t}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+          <input type="checkbox" id="cake-${idx}">ケーキ
+        </label>
+        <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
+          <input type="checkbox" id="plate-${idx}">プレート
+        </label>
+        <input type="text" id="allergy-${idx}" placeholder="アレルギー（任意）" style="margin-top:8px;width:100%">
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  // ▼ 保存ボタンを有効化し、押したら localStorage に保存
+  const saveBtn = document.getElementById('save-btn');
+  const toBoardBtn = document.getElementById('to-board-btn');
+  if (saveBtn) saveBtn.disabled = false;
+  if (toBoardBtn) toBoardBtn.disabled = false;
+
+  function collectRows(){
+    const items = [];
     ROOMS.forEach((name, idx) => {
-      const row = document.createElement('div');
-      row.className = 'room-row';
-      row.innerHTML = `
-        <div><input type="checkbox" id="use-${idx}"></div>
-        <div class="room-name">${name}</div>
-        <div><input type="number" min="0" id="guest-${idx}" placeholder="人数"></div>
-        <div>
-          <select id="plan-${idx}">
-            <option value="">未選択</option>
-            ${PLANS.map(p=>`<option>${p}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <select id="dinner-${idx}">
-            <option value="">未選択</option>
-            ${DINNER_TIMES.map(t=>`<option>${t}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-            <input type="checkbox" id="cake-${idx}">ケーキ
-          </label>
-          <label style="display:inline-flex;gap:6px;align-items:center;margin-right:8px;">
-            <input type="checkbox" id="plate-${idx}">プレート
-          </label>
-          <input type="text" id="allergy-${idx}" placeholder="アレルギー（任意）" style="margin-top:8px;width:100%">
-        </div>
-      `;
-      wrap.appendChild(row);
+      const enabled = document.getElementById(`use-${idx}`).checked;
+      const guest = Number(document.getElementById(`guest-${idx}`).value || 0);
+      const plan = document.getElementById(`plan-${idx}`).value || "";
+      const dinner = document.getElementById(`dinner-${idx}`).value || "";
+      const cake = document.getElementById(`cake-${idx}`).checked;
+      const plate = document.getElementById(`plate-${idx}`).checked;
+      const allergy = document.getElementById(`allergy-${idx}`).value || "";
+      if (enabled) {
+        items.push({ name, guest, plan, dinner, cake, plate, allergy });
+      }
     });
 
-
-    // ▼ 保存ボタンを有効化し、押したら localStorage に保存
-    const saveBtn = document.getElementById('save-btn');
-    const toBoardBtn = document.getElementById('to-board-btn');
-    saveBtn.disabled = false;
-    toBoardBtn.disabled = false;
-
-    function collectRows(){
-      const items = [];
-      ROOMS.forEach((name, idx) => {
-        const enabled = document.getElementById(`use-${idx}`).checked;
-        const guest = Number(document.getElementById(`guest-${idx}`).value || 0);
-        const plan = document.getElementById(`plan-${idx}`).value || "";
-        const dinner = document.getElementById(`dinner-${idx}`).value || "";
-        const cake = document.getElementById(`cake-${idx}`).checked;
-        const plate = document.getElementById(`plate-${idx}`).checked;
-        const allergy = document.getElementById(`allergy-${idx}`).value || "";
-        if (enabled) {
-          items.push({ name, guest, plan, dinner, cake, plate, allergy });
-        }
-      });
-
-      // カスタム
-      if (document.getElementById('use-custom').checked){
-        const name = document.getElementById('custom-room-name').value.trim();
-        if (name){
-          items.push({
-            name,
-            guest: Number(document.getElementById('custom-guest').value || 0),
-            plan: document.getElementById('custom-plan').value || "",
-            dinner: document.getElementById('custom-dinner').value || "",
-            cake: document.getElementById('custom-cake').checked,
-            plate: document.getElementById('custom-plate').checked,
-            allergy: document.getElementById('custom-allergy').value || ""
-          });
-        }
+    // カスタム
+    const useCustom = document.getElementById('use-custom');
+    if (useCustom && useCustom.checked){
+      const name = (document.getElementById('custom-room-name').value || '').trim();
+      if (name){
+        items.push({
+          name,
+          guest: Number(document.getElementById('custom-guest').value || 0),
+          plan: document.getElementById('custom-plan').value || "",
+          dinner: document.getElementById('custom-dinner').value || "",
+          cake: document.getElementById('custom-cake').checked,
+          plate: document.getElementById('custom-plate').checked,
+          allergy: document.getElementById('custom-allergy').value || ""
+        });
       }
-      return items;
     }
+    return items;
+  }
 
+  if (saveBtn){
     saveBtn.addEventListener('click', () => {
       const payload = {
         date: new Date().toISOString().slice(0,10), // YYYY-MM-DD
@@ -190,9 +196,10 @@
       localStorage.setItem('today-settings.v1', JSON.stringify(payload));
       alert('保存しました（today-settings.v1）');
     });
+  }
 
+  if (toBoardBtn){
     toBoardBtn.addEventListener('click', () => {
-      // 保存してから発注ボードへ
       const payload = {
         date: new Date().toISOString().slice(0,10),
         rooms: collectRows()
@@ -200,7 +207,9 @@
       localStorage.setItem('today-settings.v1', JSON.stringify(payload));
       location.href = './index.html?nocache=1';
     });
+  }
+});
+</script>
 
-  </script>
 </body>
 </html>
