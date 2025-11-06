@@ -11,62 +11,27 @@
   }
   tabInput.addEventListener("click", () => { tabInput.setAttribute("aria-selected","true"); tabKitchen.removeAttribute("aria-selected"); show(viewInput); });
   tabKitchen.addEventListener("click", () => { tabKitchen.setAttribute("aria-selected","true"); tabInput.removeAttribute("aria-selected"); show(viewKitchen); });
+// === 時刻ユーティリティ（上に追加） ===
+function pad2(n){ return String(n).padStart(2,'0'); }
+function hhmm(d){ return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function addMinutes(d, mins){ return new Date(d.getTime() + mins*60000); }
+function isHHMM(s){ return /^\d{2}:\d{2}$/.test(String(s||'')); }
 
   /* ===== 進行表（18:00 / 18:30 / 19:00・2段階） ===== */
-  /* ▼▼ 丸ボタンの状態切替（未 → 時刻 → 発注 → 提供 → 未） ▼▼ */
-
-// 時刻を「HH:MM」型で作る
-function nowHHMM(){
-  const d = new Date();
-  const h = String(d.getHours()).padStart(2,"0");
-  const m = String(d.getMinutes()).padStart(2,"0");
-  return `${h}:${m}`;
-}
-
-// セルの表示を書き換える（丸と下の文字の両方に対応）
-function applyStateToCell(cell, state){
-  // 下の文字（「未」など）を探す。small / .label / .status の順で探し、なければ近いテキストを探す
-  const label =
-    cell.querySelector(".js-status, .status, .label, small") ||
-    cell.querySelector(".caption, .note") ||
-    cell.querySelector("*:not(button):not(input)");
-  if (label) label.textContent = state;
-
-  // 見た目用のclass（あれば効く、なくても大丈夫）
-  cell.classList.remove("is-none","is-time","is-order","is-serve");
-  if (state === "未") cell.classList.add("is-none");
-  else if (/^\d{2}:\d{2}$/.test(state)) cell.classList.add("is-time");
-  else if (state === "発注") cell.classList.add("is-order");
-  else if (state === "提供") cell.classList.add("is-serve");
-
-  // 次の判定のために保存
-  cell.dataset.state = state;
-}
-
-// クリックで状態を進める
-document.addEventListener("click", (ev) => {
-  // 「丸」そのもの、または丸の中身をクリックしたときに反応させる
-  const dot = ev.target.closest(".js-dot, .dot, .circle, .radio, .round, button");
-  if (!dot) return;
-
-  // 丸とラベルを一緒に包んでいる一番近い親（tdやdiv）をセル扱いにする
-  const cell = dot.closest("td, .cell, .dish, .stage, .col, div");
-  if (!cell) return;
-
-  // いまの状態を取得（なければ「未」）
-  let state = cell.dataset.state || (cell.textContent.includes("未") ? "未" : "未");
-
-  // 次の状態に進める
-  if (state === "未") state = nowHHMM();
-  else if (/^\d{2}:\d{2}$/.test(state)) state = "発注";
-  else if (state === "発注") state = "提供";
-  else state = "未";
-
-  applyStateToCell(cell, state);
-});
-/* ▲▲ ここまで追加 ▲▲ */
 
   const KEY_BOARD = "dinner.board.v2";
+// 文字列で状態を保存する新キー（未／発注／提供／HH:MM）
+const KEY_BOARD_V3 = "dinner.board.v3";
+function saveBoardV3(state){ localStorage.setItem(KEY_BOARD_V3, JSON.stringify(state)); }
+function loadBoardV3(){
+  try{ const raw = localStorage.getItem(KEY_BOARD_V3); return raw ? JSON.parse(raw) : {}; }
+  catch{ return {}; }
+}
+function ensureStateV3(state, groupId, roomId, colIdx){
+  if(!state[groupId]) state[groupId] = {};
+  if(!state[groupId][roomId]) state[groupId][roomId] = {};
+  if(typeof state[groupId][roomId][colIdx] !== "string") state[groupId][roomId][colIdx] = "未";
+}
 
   const GROUPS = [
     {
@@ -173,6 +138,7 @@ document.addEventListener("click", (ev) => {
   document.getElementById("resetToday").addEventListener("click", ()=>{
     if(confirm("本日の進行データを消去します。よろしいですか？")){
       localStorage.removeItem(KEY_BOARD);
+      localStorage.removeItem(KEY_BOARD_V3); //
       localStorage.removeItem(`board-state.v1:${new Date().toISOString().slice(0,10)}`);
 
       renderBoards();
@@ -255,31 +221,55 @@ document.addEventListener("click", (ev) => {
     if(root && html.trim()){
       root.innerHTML = html;
 
-      // ◯ボタンの状態復元＋クリック保存（保存先：dinner.board.v2）
-      const st = loadBoard() || {};
-      root.querySelectorAll('.cell').forEach(cell => {
-        const btn = cell.querySelector('.dotbtn');
-        const label = cell.querySelector('.dotlabel');
-        const groupId = cell.dataset.group;       // 例: "18:00"
-        const roomId  = cell.dataset.room;        // 例: "やまぶき"
-        const colIdx  = Number(cell.dataset.col); // 0〜6（甘味は6）
+     // ◯ボタンの状態復元＋クリック保存（保存先：dinner.board.v3 文字列）
+const st = loadBoardV3() || {};
+root.querySelectorAll('.cell').forEach(cell => {
+  const btn = cell.querySelector('.dotbtn');
+  const label = cell.querySelector('.dotlabel');
+  const groupId = cell.dataset.group;       // 例: "18:00"
+  const roomId  = cell.dataset.room;        // 例: "やまぶき"
+  const colIdx  = Number(cell.dataset.col); // 0〜6
 
-        ensureState(st, groupId, roomId, colIdx);
-        const on = st[groupId][roomId][colIdx] === 1;
-        btn.classList.toggle('is-on', on);
-        if (label) label.textContent = on ? '出' : '未';
+  ensureStateV3(st, groupId, roomId, colIdx);
 
-        btn.addEventListener('click', () => {
-          const cur = loadBoard() || {};
-          ensureState(cur, groupId, roomId, colIdx);
-          cur[groupId][roomId][colIdx] = cur[groupId][roomId][colIdx] === 1 ? 0 : 1;
-          saveBoard(cur);
+  // 表示復元：未／発注／提供／HH:MM
+  const cur = st[groupId][roomId][colIdx];
+  if (label) label.textContent = cur;
+  btn.classList.toggle('is-on', cur !== '未');
 
-          const on2 = cur[groupId][roomId][colIdx] === 1;
-          btn.classList.toggle('is-on', on2);
-          if (label) label.textContent = on2 ? '出' : '未';
-        });
-      });
+  btn.addEventListener('click', () => {
+    // 直前の状態（最新を読む）
+    const curSt = loadBoardV3();
+    ensureStateV3(curSt, groupId, roomId, colIdx);
+    const prev = curSt[groupId][roomId][colIdx];
+    let next = '未';
+
+    // 流れ：未 → 時刻入力 → 発注 → 提供 → 未
+    if (prev === '未') {
+      const input = prompt('何分後にしますか？ 5 / 10 / 15 / 20 / 25', '10');
+      if (input === null) return; // キャンセル
+      const plus = parseInt(input, 10);
+      if (![5,10,15,20,25].includes(plus)) {
+        alert('5,10,15,20,25 のどれかを入力してください');
+        return;
+      }
+      next = hhmm(addMinutes(new Date(), plus)); // 例: "13:25"
+    } else if (isHHMM(prev)) {
+      next = '発注';
+    } else if (prev === '発注') {
+      next = '提供';
+    } else {
+      next = '未';
+    }
+
+    // 保存＆表示更新
+    curSt[groupId][roomId][colIdx] = next;
+    saveBoardV3(curSt);
+    if (label) label.textContent = next;
+    btn.classList.toggle('is-on', next !== '未');
+  });
+});
+
     }
   }
 
