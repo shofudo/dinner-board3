@@ -743,6 +743,38 @@
     return;
   }
 
+  // === 音を鳴らす機能 ===
+  function playNotificationSound() {
+    // Web Audio APIを使って短い「ピッ」という音を生成
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 音の設定
+      oscillator.frequency.value = 800; // 周波数（高さ）
+      oscillator.type = 'sine'; // 音の種類（サイン波 = きれいな音）
+      
+      // 音量の設定（徐々に小さくなる）
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      // 音を鳴らす
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2); // 0.2秒間鳴らす
+      
+      console.log('🔔 通知音を鳴らしました');
+    } catch (e) {
+      console.error('音の再生に失敗:', e);
+    }
+  }
+
+  // 前回表示されていた料理を記憶する変数
+  let previousDisplayedDishes = new Set();
+
   // === キッチン表示の更新機能 ===
   function updateKitchenDisplay() {
     console.log('🍳 キッチン表示を更新中...');
@@ -851,8 +883,8 @@
         
         console.log(`📝 ${roomId} - ${dishName}: ${dishState}`);
         
-        // 「待」「注」の状態のみ表示
-        if (dishState !== '待' && dishState !== '注') return;
+        // 「注」の状態のみ表示（「待」は表示しない、「済」も表示しない）
+        if (dishState !== '注') return;
 
         const key = dishName;
         if (!dishAggregation[key]) {
@@ -901,8 +933,30 @@
     if (dishCards.length === 0) {
       kitchenDisplay.innerHTML = '<div class="kitchen-no-orders">現在、待機中・調理中の料理はありません</div>';
       console.log('✅ 待機中・調理中の料理はありません');
+      // 料理がなくなったので記憶をクリア
+      previousDisplayedDishes.clear();
       return;
     }
+
+    // 現在表示する料理のリストを作成
+    const currentDisplayedDishes = new Set(dishCards.map(dish => dish.name));
+    
+    // 新しく追加された料理があるかチェック
+    let hasNewDish = false;
+    for (const dishName of currentDisplayedDishes) {
+      if (!previousDisplayedDishes.has(dishName)) {
+        hasNewDish = true;
+        console.log(`🆕 新しい料理が追加されました: ${dishName}`);
+      }
+    }
+    
+    // 新しい料理があれば音を鳴らす（初回でも鳴らす）
+    if (hasNewDish) {
+      playNotificationSound();
+    }
+    
+    // 今回の表示を記憶
+    previousDisplayedDishes = currentDisplayedDishes;
 
     // 状態の優先順位: 注 > 待
     dishCards.sort((a, b) => {
@@ -913,6 +967,9 @@
     const cardsHtml = dishCards.map(dish => {
       const stateClass = dish.state === '注' ? 'state-cooking' : 'state-waiting';
       const stateLabel = dish.state === '注' ? '🔥 調理中' : '⏳ 待機中';
+
+      // 各部屋の人数を合計
+      const totalGuests = dish.rooms.reduce((sum, r) => sum + (r.guest || 0), 0);
 
       const roomsHtml = dish.rooms.map(r => {
         const welldoneText = r.welldone > 0 ? ` (W×${r.welldone})` : '';
@@ -927,7 +984,7 @@
         <div class="kitchen-dish-card ${stateClass}">
           <div class="kitchen-dish-name">${dish.name}</div>
           <div class="kitchen-dish-reading">${dish.reading}</div>
-          <div class="kitchen-dish-count">${dish.count}食</div>
+          <div class="kitchen-dish-count">${totalGuests}名</div>
           ${welldoneSection}
           <div style="text-align:center;margin:12px 0;font-size:18px;font-weight:bold;color:#555;">
             ${stateLabel}
@@ -972,6 +1029,30 @@
         setTimeout(updateKitchenDisplay, 300);
       }
     });
+
+    // === 🔥 別タブでのデータ変更を検知する機能（追加） ===
+    // 別のブラウザタブでlocalStorageが変更されたら、このタブも自動的に更新する
+    window.addEventListener('storage', (e) => {
+      console.log('📡 別タブでデータが変更されました:', e.key);
+      
+      // dinner.board.v3 が変更されたらキッチン表示を更新
+      if (e.key === 'dinner.board.v3') {
+        console.log('🔄 キッチン表示を自動更新します');
+        setTimeout(updateKitchenDisplay, 100);
+      }
+      
+      // 設定が変更されたら画面全体を再描画
+      if (e.key === 'room-settings.v1') {
+        console.log('🔄 設定が変更されたので画面を再描画します');
+        const newData = loadSettings();
+        if (newData) {
+          renderFromSettings(newData);
+        }
+        setTimeout(updateKitchenDisplay, 100);
+      }
+    });
+    
+    console.log('✅ 別タブ監視機能を有効化しました！');
 
     // === リセットボタン（改善版） ===
     const resetBtn = document.getElementById("btn-reset-today");
