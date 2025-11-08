@@ -252,9 +252,9 @@ button { cursor: pointer; }
 /* === 人数タグ（大きく表示） === */
 .guest-tag {
   display: inline-block;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 3px 10px;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 4px 12px;
   margin-right: 6px;
   border-radius: 6px;
 }

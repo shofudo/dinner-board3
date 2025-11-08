@@ -635,7 +635,7 @@
               const tagColor = planTagColors[r.plan] || { bg: '#757575', color: '#fff' };
               
               // 人数タグを大きく表示
-              const guestTag = r.guest ? `<span class="guest-tag" style="display:inline-block; font-size:16px; font-weight:bold; padding:3px 10px; background:${tagColor.bg}; color:${tagColor.color}; border-radius:6px;">${r.guest}名</span>` : "";
+              const guestTag = r.guest ? `<span class="guest-tag" style="display:inline-block; font-size:20px; font-weight:900; padding:4px 12px; background:${tagColor.bg}; color:${tagColor.color}; border-radius:6px;">${r.guest}名</span>` : "";
               
               // プランタグ
               const planTag = r.plan ? `<span class="plan-tag" style="display:inline-block; font-size:11px; padding:2px 8px; background:${tagColor.bg}; color:${tagColor.color}; border-radius:4px;">${esc(r.plan)}</span>` : "";
@@ -672,7 +672,7 @@
                   <div>
                     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
                       ${speedSelector}
-                      <strong style="font-size:16px;">${esc(r.name)}</strong>
+                      <strong style="font-size:20px;font-weight:900;">${esc(r.name)}</strong>
                       ${guestTag}
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
