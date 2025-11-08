@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>データ移行ツール</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .status.info {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+    }
+    .status.success {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+    }
+    .status.error {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+    }
+    .status.warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .data-preview {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .step {
+      margin: 30px 0;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 データ移行ツール</h1>
+    <p class="subtitle">localStorageのデータをFirebaseに移行します</p>
+
+    <div class="step">
+      <span class="step-number">1</span>
+      <strong>現在のlocalStorageデータを確認</strong>
+      <div id="local-status" class="status info" style="margin-top: 15px;">
+        確認中...
+      </div>
+      <div id="data-preview" class="data-preview" style="display:none;"></div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">2</span>
+      <strong>Firebaseに移行</strong>
+      <button id="migrate-btn" onclick="migrateData()" disabled>
+        データを移行する
+      </button>
+      <div id="migrate-status" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">3</span>
+      <strong>移行完了後</strong>
+      <p style="margin-top: 10px; color: #666;">
+        移行が完了したら、<strong>index.html</strong> を開いてシステムを使ってください。
+      </p>
+    </div>
+  </div>
+
+  <!-- Firebase SDKを読み込む -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // Firebaseの設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyBArbWHqcazV8QGBHynPHQgqYyiAQn5mhw",
+      authDomain: "dinner-management-d3580.firebaseapp.com",
+      databaseURL: "https://dinner-management-d3580-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dinner-management-d3580",
+      storageBucket: "dinner-management-d3580.firebasestorage.app",
+      messagingSenderId: "859809463635",
+      appId: "1:859809463635:web:f276930f7dc721a02ff5a6"
+    };
+
+    // Firebaseを初期化
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // グローバルに公開
+    window.firebaseApp = app;
+    window.firebaseDatabase = database;
+    window.firebaseRef = ref;
+    window.firebaseSet = set;
+
+    console.log('✅ Firebase初期化完了！');
+
+    // localStorageのデータを確認
+    function checkLocalData() {
+      const localStatusDiv = document.getElementById('local-status');
+      const dataPreviewDiv = document.getElementById('data-preview');
+      const migrateBtn = document.getElementById('migrate-btn');
+
+      // 移行対象のキー
+      const keys = [
+        'room-settings.v1',
+        'dinner.board.v3',
+        'extra-dishes.v1'
+      ];
+
+      const foundData = {};
+      let hasData = false;
+
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          foundData[key] = value;
+          hasData = true;
+        }
+      });
+
+      // スピードとメモも確認
+      const speedAndMemoKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('speed-') || key.startsWith('memo-'))) {
+          foundData[key] = localStorage.getItem(key);
+          speedAndMemoKeys.push(key);
+          hasData = true;
+        }
+      }
+
+      if (hasData) {
+        const dataCount = Object.keys(foundData).length;
+        localStatusDiv.className = 'status success';
+        localStatusDiv.innerHTML = `
+          ✅ <strong>${dataCount}個</strong>のデータが見つかりました！<br>
+          移行可能なデータ：
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            ${Object.keys(foundData).map(k => `<li>${k}</li>`).join('')}
+          </ul>
+        `;
+        
+        dataPreviewDiv.style.display = 'block';
+        dataPreviewDiv.textContent = JSON.stringify(foundData, null, 2);
+        
+        migrateBtn.disabled = false;
+        window.foundData = foundData;
+      } else {
+        localStatusDiv.className = 'status warning';
+        localStatusDiv.innerHTML = '⚠️ localStorageにデータが見つかりませんでした。<br>新しく設定を入力してください。';
+        migrateBtn.disabled = true;
+      }
+    }
+
+    // ページ読み込み時にチェック
+    window.addEventListener('load', () => {
+      setTimeout(checkLocalData, 500);
+    });
+
+    // データを移行する関数
+    window.migrateData = async function() {
+      const migrateBtn = document.getElementById('migrate-btn');
+      const migrateStatusDiv = document.getElementById('migrate-status');
+      
+      migrateBtn.disabled = true;
+      migrateBtn.textContent = '移行中...';
+      
+      migrateStatusDiv.className = 'status info';
+      migrateStatusDiv.innerHTML = '🔄 データを移行しています...';
+
+      try {
+        const foundData = window.foundData;
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (const [key, value] of Object.entries(foundData)) {
+          try {
+            // キー名を変換（Firebase用）
+            let firebaseKey = key;
+            if (key === 'room-settings.v1') {
+              firebaseKey = 'room-settings-v1';
+            } else if (key === 'dinner.board.v3') {
+              firebaseKey = 'dinner-board-v3';
+            } else if (key === 'extra-dishes.v1') {
+              firebaseKey = 'extra-dishes-v1';
+            }
+
+            // データをパース
+            let data;
+            try {
+              data = JSON.parse(value);
+            } catch (e) {
+              // JSONパースできない場合はそのまま保存
+              data = value;
+            }
+
+            // Firebaseに保存
+            const dbRef = window.firebaseRef(window.firebaseDatabase, firebaseKey);
+            await window.firebaseSet(dbRef, data);
+            
+            console.log(`✅ ${firebaseKey} を移行しました`);
+            successCount++;
+
+            migrateStatusDiv.innerHTML = `🔄 移行中... (${successCount}/${Object.keys(foundData).length})`;
+
+          } catch (error) {
+            console.error(`❌ ${key} の移行に失敗:`, error);
+            errorCount++;
+            errors.push({ key, error: error.message });
+          }
+        }
+
+        // 結果を表示
+        if (errorCount === 0) {
+          migrateStatusDiv.className = 'status success';
+          migrateStatusDiv.innerHTML = `
+            ✅ <strong>移行完了！</strong><br>
+            ${successCount}個のデータをFirebaseに移行しました。<br><br>
+            <strong>次のステップ：</strong><br>
+            このページを閉じて、<strong>index.html</strong> を開いてください。
+          `;
+          migrateBtn.textContent = '移行完了！';
+        } else {
+          migrateStatusDiv.className = 'status warning';
+          migrateStatusDiv.innerHTML = `
+            ⚠️ <strong>一部のデータの移行に失敗しました</strong><br>
+            成功: ${successCount}個<br>
+            失敗: ${errorCount}個<br><br>
+            <strong>エラー詳細：</strong><br>
+            ${errors.map(e => `${e.key}: ${e.error}`).join('<br>')}
+          `;
+          migrateBtn.textContent = '一部失敗';
+          migrateBtn.disabled = false;
+        }
+
+      } catch (error) {
+        console.error('移行エラー:', error);
+        migrateStatusDiv.className = 'status error';
+        migrateStatusDiv.innerHTML = `
+          ❌ <strong>移行に失敗しました</strong><br>
+          エラー: ${error.message}
+        `;
+        migrateBtn.textContent = 'もう一度試す';
+        migrateBtn.disabled = false;
+      }
+    };
+
+  </script>
+</body>
+</html>
