@@ -822,8 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
     saveAndBoardBtn.addEventListener('click', () => {
       saveSettings();
       alert('保存しました!発注ボードへ移動します。');
-const returnUrl = new URLSearchParams(window.location.search).get('return') || 'index.html';
-location.href = './' + returnUrl + '?nocache=' + Date.now();    });
+      location.href = './index.html?nocache=' + Date.now();
+    });
   }
 
   // 「保存のみ」ボタン
