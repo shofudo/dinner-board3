@@ -10,6 +10,14 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <script>
+  (function () {
+    // “stay=1” が付いていない通常アクセスは order.html に寄せる
+    if (!new URL(location.href).searchParams.get('stay')) {
+      location.replace('./order.html?v=sync12&nocache=' + Date.now());
+    }
+  })();
+</script>
     <!-- ▼ 全て横一列におしゃれに配置 -->
     <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:2px solid #e0e0e0;margin-bottom:16px;">
       <!-- 設定ページへのリンク（小さいボタン） -->
