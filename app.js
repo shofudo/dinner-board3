@@ -262,12 +262,22 @@
         const roomId  = cell.dataset.room;
         const colIdx  = Number(cell.dataset.col);
 
-        const st = loadBoard();
-        ensureState(st, groupId, roomId, colIdx);
-        st[groupId][roomId][colIdx] = st[groupId][roomId][colIdx] === 1 ? 0 : 1;
-        saveBoard(st);
+        // Firebase 書き込み
+const st = loadBoard();
+ensureState(st, groupId, roomId, colIdx);
+const next = st[groupId][roomId][colIdx] === 1 ? 0 : 1;
 
-        const on = st[groupId][roomId][colIdx] === 1;
+if (window.__db) {
+  const { db, ref, set } = window.__db;
+  set(ref(db, `dinner-board-v3/${groupId}/${roomId}/${colIdx}`), next);
+} else {
+  // fallback（Firebaseが無い時）
+  st[groupId][roomId][colIdx] = next;
+  saveBoard(st);
+}
+
+const on = next === 1;
+
         e.currentTarget.classList.toggle("is-on", on);
         cell.querySelector(".dotlabel").textContent = on ? "出":"未";
       });
@@ -278,7 +288,15 @@
 
   // 初期表示
   renderBoardV3();
-
+// === Firebase リアルタイム購読 ===
+if (window.__db) {
+  const { db, ref, onValue } = window.__db;
+  const boardRef = ref(db, 'dinner-board-v3');
+  onValue(boardRef, (snapshot) => {
+    const state = snapshot.val() || {};
+    renderBoardV3(state);
+  });
+}
 })(); // まとまり終わり
 
 // ==============================
