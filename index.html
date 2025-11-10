@@ -9,6 +9,22 @@
     <title>夕食進行ボード（ミニ）</title>
     <link rel="stylesheet" href="style.css" />
   </head>
+  <!-- 🔧 SW & Cache killer (一時的) -->
+<script>
+(function() {
+  // 既存の Service Worker を全解除
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => regs.forEach(reg => reg.unregister()))
+      .catch(()=>{});
+  }
+  // Cache Storage も全削除
+  if (window.caches && caches.keys) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+})();
+</script>
+
   <body>
     <script>
   (function () {

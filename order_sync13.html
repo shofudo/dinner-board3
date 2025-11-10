@@ -8,13 +8,33 @@
     <title>オーダー入力 - 夕食進行ボード</title>
     <link rel="stylesheet" href="style.css" />
   </head>
+  <!-- 🔧 SW & Cache killer (一時的) -->
+<script>
+(function() {
+  // 既存の Service Worker を全解除
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => regs.forEach(reg => reg.unregister()))
+      .catch(()=>{});
+  }
+  // Cache Storage も全削除
+  if (window.caches && caches.keys) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+})();
+</script>
+
   <body>
 <!-- ヘッダー部分 -->
    <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:2px solid #e0e0e0;margin-bottom:16px;">
      <!-- 設定ページへのリンク --><a href="./settings.html?return=order.html" style="display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #ccc;border-radius:8px;text-decoration:none;font-size:13px;color:#666;background:#fff;transition:all 0.2s;white-space:nowrap;">
   ⚙️ 本日の設定
 </a>
-  
+  <div style="position:fixed; top:8px; right:8px; padding:4px 8px; 
+            background:#222; color:#fff; font-size:12px; z-index:9999;">
+  SYNC13
+</div>
+
   <!-- タイトル -->
   <h1 style="margin:0;font-size:24px;font-weight:700;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;">
     🍽️ オーダー入力
