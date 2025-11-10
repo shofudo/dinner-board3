@@ -70,6 +70,13 @@ const db  = getDatabase(app);
 
 window.__db = { db, ref, onValue, set, serverTimestamp };
 console.log('Firebase初期化OK(index)');
+// Realtime 購読（これが無いと他端末の変化が届かない）
+const boardRef = ref(db, 'dinner-board-v3');
+onValue(boardRef, (snap) => {
+  const state = snap.val() || {};
+  if (window.renderBoardV3) window.renderBoardV3(state);
+});
+
 </script>
 
-<script src="app.js?v=sync7"></script>
+<script src="app.js?v=sync9"></script>
