@@ -573,4 +573,35 @@ button { cursor: pointer; }
   /* 両列にまたがって配置 */
   grid-column: 1 / 3;
 }
+/* --- 折りたたみヘッダー --- */
+.hdr { border-bottom: 1px solid #e7e7e7; margin: 0 0 8px; }
+summary::-webkit-details-marker { display: none; } /* 既定の三角を消す */
+
+.hdr__bar {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hdr__title { font-size: 24px; font-weight: 700; }
+
+.hdr__chev {
+  margin-left: 8px;
+  transition: transform .15s ease;
+}
+
+.hdr[open] .hdr__chev { transform: rotate(180deg); }
+
+.hdr__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 12px;
+  background: #fff;
+  border-radius: 8px;
+}
 

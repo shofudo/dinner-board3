@@ -9,22 +9,20 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-<!-- ヘッダー部分 -->
-   <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:2px solid #e0e0e0;margin-bottom:16px;">
-     <!-- 設定ページへのリンク --><a href="./settings.html?return=order.html" style="display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #ccc;border-radius:8px;text-decoration:none;font-size:13px;color:#666;background:#fff;transition:all 0.2s;white-space:nowrap;">
-  ⚙️ 本日の設定
-</a>
-  
-  <!-- タイトル -->
-  <h1 style="margin:0;font-size:24px;font-weight:700;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;">
-    🍽️ オーダー入力
-  </h1>
-  
-  <!-- 本日データを初期化ボタン -->
-  <button id="btn-reset-today" style="margin-left:auto;padding:8px 14px;border:1px solid #f44336;border-radius:8px;background:#fff;color:#f44336;font-size:13px;cursor:pointer;transition:all 0.2s;white-space:nowrap;">
-    本日データを初期化
-  </button>
-</div>
+<!-- ヘッダー部分（折りたたみ） -->
+<details id="hdr" class="hdr" open>
+  <summary class="hdr__bar">
+    <span class="hdr__title">🍽️ オーダー入力</span>F
+    <span class="hdr__chev" aria-hidden="true">▾</span>
+  </summary>
+
+  <div class="hdr__content">
+    <a href="./settings.html" rel="noopener">⚙️ 本日の設定</a>
+    <button id="btn-reset-today" style="margin-left:auto;">
+      本日データを初期化
+    </button>
+  </div>
+</details>
 
     <!-- オーダー入力画面 -->
     <section id="view-input">
@@ -32,6 +30,19 @@
     </section>
 
 <script type="module">
+  // ← もし既に type="module" があるなら、この中の先頭に追加してね
+  const hdr = document.getElementById('hdr');
+  if (hdr) {
+    const KEY = 'order.hdr.open';
+    try {
+      if (localStorage.getItem(KEY) === '0') hdr.removeAttribute('open');
+    } catch (_) {}
+    hdr.addEventListener('toggle', () => {
+      try { localStorage.setItem(KEY, hdr.open ? '1' : '0'); } catch (_) {}
+    });
+  }
+</script>
+
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
