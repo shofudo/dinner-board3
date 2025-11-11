@@ -1,4 +1,21 @@
 // まとまり開始(IIFE)
+// ★JSバージョン表示（iPad判定用）
+const JS_VERSION = "2024-11-10-sync13b";
+document.body.insertAdjacentHTML(
+  "beforeend",
+  `<div style="
+    position:fixed;
+    bottom:10px;
+    right:10px;
+    background:#000;
+    color:#fff;
+    font-size:14px;
+    padding:4px 8px;
+    z-index:999999;
+    border-radius:4px;
+  ">JS=${JS_VERSION}</div>`
+);
+
 console.log("app.js v=sync13b LOADED (HEAD)");
 (() => {
   // バージョン確認用(キャッシュ問題のデバッグ)
