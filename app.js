@@ -1,4 +1,5 @@
 // まとまり開始(IIFE)
+console.log("app.js v=sync13b LOADED (HEAD)");
 (() => {
   // バージョン確認用(キャッシュ問題のデバッグ)
   const APP_VERSION = '2024-11-08-v3';
