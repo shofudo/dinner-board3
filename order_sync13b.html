@@ -30,6 +30,19 @@
   document.documentElement.appendChild(badge);
 })();
 </script>
+<!-- ★ 強制レンダー起動（古いUI残留対策） -->
+<script>
+(() => {
+  console.log('renderPatch: 強制レンダー開始！');
+  const t = setInterval(()=>{
+    if (window.renderOrderV3) {
+      console.log('renderPatch: renderOrderV3 FOUND → 実行！');
+      renderOrderV3();
+      clearInterval(t);
+    }
+  }, 300);
+})();
+</script>
 
 
 </head>
