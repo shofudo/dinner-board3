@@ -8,38 +8,45 @@
     <title>オーダー入力 - 夕食進行ボード</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-<!-- ヘッダー部分（折りたたみ） -->
-<details id="hdr" class="hdr" open>
-  <summary class="hdr__bar">
-    <span class="hdr__title">🍽️ オーダー入力</span>F
-    <span class="hdr__chev" aria-hidden="true">▾</span>
-  </summary>
+<body>
+  <!-- ヘッダー（開閉状態を保存するために #hdr は残す） -->
+  <details id="hdr" class="hdr" open>
+    <summary class="hdr_bar">
+      <span class="hdr_title">🍽 オーダー入力</span>
+      <span class="hdr_chev" aria-hidden="true">⯆</span>
+    </summary>
+    <div class="hdr_content">
+      <a href="./settings.html?v=prod1" rel="noopener">⚙ 本日の設定</a>
+      <button id="btn-reset-today" style="margin-left:auto;">本日データを初期化</button>
+    </div>
+  </details>
 
-  <div class="hdr__content">
-    <a href="./settings.html" rel="noopener">⚙️ 本日の設定</a>
-    <button id="btn-reset-today" style="margin-left:auto;">
-      本日データを初期化
-    </button>
-  </div>
-</details>
+<!-- オーダー入力（新UIは #boards に描画） -->
+<section id="view-input">
+  <div id="boards"><!-- JSで18:00/18:30/19:00を描画 --></div>
+</section>
 
-    <!-- オーダー入力画面 -->
-    <section id="view-input">
-      <div id="boards"><!-- JSで18:00/18:30/19:00を描画 --></div>
-    </section>
+<!-- Firebase 初期化（元の order_sync13.html と同じ） -->
+<script type="module" id="fb-init">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-<script type="module">
-  // ← もし既に type="module" があるなら、この中の先頭に追加してね
-  const hdr = document.getElementById('hdr');
-  if (hdr) {
-    const KEY = 'order.hdr.open';
-    try {
-      if (localStorage.getItem(KEY) === '0') hdr.removeAttribute('open');
-    } catch (_) {}
-    hdr.addEventListener('toggle', () => {
-      try { localStorage.setItem(KEY, hdr.open ? '1' : '0'); } catch (_) {}
-    });
-  }
-<!-- 新UI（app_sync13b.js）を読み込み -->
-<script type="module" src="./app_sync13b.js?v=prod1"></script>
+  const firebaseConfig = {
+    apiKey: "AIZaSyBArbWhqcaZv8QGBHynPHQggYyYiAQn5mhw",
+    authDomain: "dinner-management-d3580.firebaseapp.com",
+    databaseURL: "https://dinner-management-d3580-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dinner-management-d3580",
+    storageBucket: "dinner-management-d3580.firebasestorage.app",
+    messagingSenderId: "858090463635",
+    appId: "1:858090463635:web:f2769203f7dc721a02ff5a6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  window.__db = { db, ref, onValue, set, serverTimestamp };
+  console.log('Firebase初期化OK(order_stable)');
+</script>
+
+<!-- 新UIスクリプト（モジュールではなく通常のscriptで） -->
+<script src="./app_sync13b.js?v=prod1"></script>
