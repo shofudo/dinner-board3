@@ -6,8 +6,33 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>オーダー入力 - 夕食進行ボード</title>
-<link rel="stylesheet" href="style_sync13b.css?v=2024-11-10b">
-  </head>
+  <!-- 既存のCSS読み込み（そのままでOK。vは今のまま） -->
+<link id="css-main" rel="stylesheet" href="style_sync13b.css?v=2024-11-10b">
+
+<script>
+(function () {
+  // ★ CSSをキャッシュを無視して再読み込み
+  const ts = Date.now();
+  const force = document.createElement('link');
+  force.rel = 'stylesheet';
+  force.href = 'style_sync13b.css?v=2024-11-10b&ts=' + ts;
+  document.head.appendChild(force);
+
+  // ★ 左下にCSSバージョンを表示
+  var v = '2024-11-10b';
+  try {
+    const u = new URL(document.getElementById('css-main').href);
+    v = (u.searchParams.get('v') || v) + (u.searchParams.get('ts') ? ('+'+u.searchParams.get('ts')) : '');
+  } catch(e) {}
+  const badge = document.createElement('div');
+  badge.textContent = 'CSS=' + v;
+  badge.style.cssText = 'position:fixed;left:8px;bottom:8px;background:#000;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;z-index:2147483647;opacity:.9';
+  document.documentElement.appendChild(badge);
+})();
+</script>
+
+
+</head>
   <!-- 🔧 SW & Cache killer (一時的) -->
 <script>
 (function() {
