@@ -573,29 +573,45 @@ button { cursor: pointer; }
   /* 両列にまたがって配置 */
   grid-column: 1 / 3;
 }
-/* --- 折りたたみヘッダー --- */
-.hdr { border-bottom: 1px solid #e7e7e7; margin: 0 0 8px; }
-summary::-webkit-details-marker { display: none; } /* 既定の三角を消す */
+/* === ヘッダーを閉じたときは“極薄”にする === */
+.hdr { 
+  background: #f7f7f7;
+  position: sticky; top: 0;
+  z-index: 50;
+  margin: 0 0 6px;
+  border-bottom: 1px solid #e7e7e7;
+}
 
-.hdr__bar {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* 開いてる時は今まで通り */
+.hdr[open] .hdr__bar {
   padding: 8px 12px;
-  cursor: pointer;
-  user-select: none;
+}
+.hdr[open] .hdr__title {
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.hdr__title { font-size: 24px; font-weight: 700; }
-
-.hdr__chev {
-  margin-left: 8px;
-  transition: transform .15s ease;
+/* ★閉じている時は極薄バーだけ（高さをグッと削る） */
+.hdr:not([open]) .hdr__bar {
+  padding: 4px 8px;
+}
+.hdr:not([open]) .hdr__title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.hdr:not([open]) .hdr__chev {
+  font-size: 12px;
+  opacity: .6;
+  transform: rotate(0);
+}
+.hdr[open] .hdr__chev {
+  transform: rotate(180deg);
 }
 
-.hdr[open] .hdr__chev { transform: rotate(180deg); }
+summary::-webkit-details-marker { display: none; }
 
+/* コンテンツ部分（開いた時だけ見える） */
 .hdr__content {
   display: flex;
   align-items: center;
