@@ -777,27 +777,21 @@ const allergyDisplay = (allergyNotes.length > 0)
   ? ('<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">' + allergyNotes.join('・') + 'NG</div>')
   : '';
                     
-                    // 追加料理は四角ボタン、通常料理は丸ボタン
-                    const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
-                    
-                    return `
-                      <div class="cell" data-group="${time}" data-room="${esc(r.name)}" data-col="${idx}" data-dish="${esc(dishKey)}" data-extra="${isExtraDish}" style="text-align:center;">
-                        <div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;color:#666;">${dishName}</div>
-                        <button class="${buttonClass}"></button>
-                        ${allergyDisplay}
-                        <div class="welldone-display" style="font-size:10px;margin-top:2px;color:#d32f2f;display:none;"></div>
-                        <div class="staff-display" style="font-size:10px;margin-top:2px;color:#1976d2;display:none;"></div>
-                        ${idx === dishNames.length - 1 && dishName === '甘味' ? sweetTag : ""}
-                      </div>
-                    `;
-                  }).join("")}
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `;
-    };
+// 追加料理は四角、通常料理は丸
+const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
+
+// 1セル分のHTML（テンプレート/配列joinは使わない：全部連結）
+const cellHtml =
+  '<div class="cell" data-group="' + time + '" data-room="' + esc(r.name) + '" data-col="' + String(idx) + '">' +
+    '<div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' + dishName + '</div>' +
+    '<button class="' + buttonClass + '"></button>' +
+      allergyDisplay +
+    '<div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
+    '<div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
+    ((idx === dishNames.length - 1 && dishName === '甘味') ? sweetTag : '') +
+  '</div>';
+
+return cellHtml;
 
     const times = ["18:00", "18:30", "19:00"];
     const html = times.map((time, idx) => 
