@@ -662,50 +662,64 @@ if (window.__db) {
     };
 
 const groupHtml = (time, list, isLast) => {
-  // 各部屋(row)のHTML
-  const roomsHtml = list.map((r) => {
+  // 見出し
+  let out = '';
+  out += '<div class="time-group" style="border-bottom:' + (isLast ? 'none' : '1px solid #e0e0e0') +
+         ';padding-bottom:8px;margin-bottom:' + (isLast ? '0' : '8px') + ';">';
+  out += '<h2 class="time-group-header" style="margin:4px 0 6px 0;font-size:13px;color:#999;font-weight:normal;">' + time + '</h2>';
+  out += '<div class="table like">';
+
+  // 1行ずつ
+  out += list.map((r) => {
     const planBg   = (planColors[r.plan] || '#f5f5f5');
-    const tagColor = (planTagColors[r.plan] || { bg: '#757575', color: '#fff' });
+    const tagColor = (planTagColors[r.plan] || { bg:'#757575', color:'#fff' });
 
-    // 人数タグ
     const guestTag = r.guest
-      ? ('<span class="guest-tag" style="display:inline-block; font-size:20px; font-weight:900; padding:4px 12px; background:' +
-          tagColor.bg + '; color:' + tagColor.color + '; border-radius:6px;">' + r.guest + '名</span>')
-      : '';
+      ? '<span class="guest-tag" style="display:inline-block;font-size:20px;font-weight:900;padding:4px 12px;background:' +
+        tagColor.bg + ';color:' + tagColor.color + ';border-radius:6px;">' + r.guest + '名</span>' : '';
 
-    // プランタグ
-    const planTag = r.plan
-      ? ('<span class="plan-tag" style="display:inline-block; font-size:11px; padding:2px 8px; background:' +
-          tagColor.bg + '; color:' + tagColor.color + '; border-radius:4px;">' + esc(r.plan) + '</span>')
-      : '';
+    const planTag  = r.plan
+      ? '<span class="plan-tag" style="display:inline-block;font-size:11px;padding:2px 8px;background:' +
+        tagColor.bg + ';color:' + tagColor.color + ';border-radius:4px;">' + esc(r.plan) + '</span>' : '';
 
-    // プランの料理名
-    const baseDishes = (r.plan && planDishNames[r.plan]) ? planDishNames[r.plan] : ['吸物','刺身','蒸物','揚物','煮物','飯','甘味'];
-    const dishNames  = insertExtraDishes(baseDishes, data.extraDishes, r.name);
-    r.dishNames = dishNames; // キッチン表示用に保存
+    const baseDishes = (r.plan && planDishNames[r.plan]) ? planDishNames[r.plan]
+                     : ['吸物','刺身','蒸物','揚物','煮物','飯','甘味'];
 
-    // 追加料理名セット
-    const extraDishNames = new Set((data.extraDishes || []).map(d => d.name));
+    const dishNames = insertExtraDishes(baseDishes, data.extraDishes, r.name);
+    r.dishNames = dishNames; // キッチン表示用に保持
 
-    // ケーキ/プレート
+    const extraDishSet = new Set((data.extraDishes || []).map(d => d.name));
+
     let sweetTag = '';
     if (r.plan && (r.cake || r.plate)) {
-      const arr = [];
-      if (r.cake)  arr.push('ケーキ');
-      if (r.plate) arr.push('プレート');
-      sweetTag = '<span class="tag note" style="font-size:11px; margin-left:6px;">' + arr.join('・') + '</span>';
+      const parts = [];
+      if (r.cake)  parts.push('ケーキ');
+      if (r.plate) parts.push('プレート');
+      sweetTag = '<span class="tag note" style="font-size:11px;margin-left:6px;">' + parts.join('・') + '</span>';
     }
 
-    // 左側のプレースホルダ
-    const speedSelector = '<div class="speed-wrap"></div>';
-    const memoArea      = '<div class="memo-wrap"></div>';
-
-    // 列レイアウト
     const gridColumns = '240px repeat(' + dishNames.length + ',1fr)';
 
-    // === 各料理セル ===
-    const cellsHtml = dishNames.map((dishName, idx) => {
-      // 料理ごとのアレルギー抽出
+    // 行
+    let row = '';
+    row += '<div class="room-row" data-plan="' + esc(r.plan || '') +
+           '" data-room-name="' + esc(r.name) + '" data-time-group="' + time +
+           '" style="display:grid;grid-template-columns:' + gridColumns +
+           ';gap:6px;align-items:center;padding:6px 8px;border-bottom:1px dashed #eee;background:' + planBg + ';">';
+
+    // 左側（部屋名・人数・タグ・メモ）
+    row += '<div>';
+    row += '  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+           '<div class="speed-wrap"></div>' +
+           '<strong style="font-size:20px;font-weight:900;">' + esc(r.name) + '</strong>' +
+           guestTag + '</div>';
+    row += '  <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">' +
+           planTag + sweetTag + '<div class="memo-wrap"></div></div>';
+    row += '</div>';
+
+    // 料理セル
+    row += dishNames.map((dishName, idx) => {
+      // --- アレルギー表示の判定 ---
       const DISH_EQUIV = {
         '揚物': new Set(['揚物','揚げ物','フライ','天ぷら']),
         'フライ': new Set(['揚物','揚げ物','フライ','天ぷら']),
@@ -720,100 +734,70 @@ const groupHtml = (time, list, isLast) => {
       };
       const norm = (s) => String(s || '').trim();
 
-      let allergyNotes = [];
-      if (r.allergies && Array.isArray(r.allergies)) {
+      let notes = [];
+      if (Array.isArray(r.allergies)) {
         r.allergies.forEach(allergy => {
-          if (allergy.targets && allergy.targets.length > 0) {
-            allergy.targets.forEach(targetRaw => {
-              const target = norm(targetRaw);
-              const dname  = norm(dishName);
-
-              // 完全一致
-              let hit = (target === dname);
-
-              // 同義語
-              if (!hit && DISH_EQUIV[dname]) hit = DISH_EQUIV[dname].has(target);
-
-              // ゆれ（空白除去）
-              if (!hit) {
-                const lite = (x) => x.replace(/[\s　]/g, '');
-                hit = (lite(target) === lite(dname));
-              }
-
-              if (hit) allergyNotes.push(allergy.name);
-            });
-          }
+          const tgts = allergy.targets || [];
+          tgts.forEach(targetRaw => {
+            const target = norm(targetRaw);
+            const dname  = norm(dishName);
+            let hit = (target === dname);
+            if (!hit && DISH_EQUIV[dname]) {
+              hit = DISH_EQUIV[dname].has(target);
+            }
+            if (!hit) {
+              const lite = (x) => x.replace(/[\s　]/g, '');
+              hit = (lite(target) === lite(dname));
+            }
+            if (hit) notes.push(allergy.name);
+          });
         });
       }
-
-      const allergyDisplay = (allergyNotes.length > 0)
-        ? ('<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">' +
-            allergyNotes.join('・') + 'NG</div>')
+      const allergyDisplay = (notes.length > 0)
+        ? '<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">' +
+          notes.join('・') + 'NG</div>'
         : '';
 
-      const isExtraDish = extraDishNames.has(dishName);
-      const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
+      const isExtra = extraDishSet.has(dishName);
+      const btnClass = isExtra ? 'squarebtn' : 'dotbtn';
 
-      const cellHtml =
-        '<div class="cell" data-group="' + time + '" data-room="' + esc(r.name) + '" data-col="' + String(idx) + '">' +
-          '<div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' + dishName + '</div>' +
-          '<button class="' + buttonClass + '"></button>' +
-            allergyDisplay +
-          '<div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
-          '<div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
-          ((idx === dishNames.length - 1 && dishName === '甘味') ? sweetTag : '') +
-        '</div>';
+      let cell = '';
+      cell += '<div class="cell" data-group="' + time +
+        '" data-room="' + esc(r.name) +
+        '" data-col="' + String(idx) + '"' +
+        ' data-dish="' + dishName + '">';
+      cell += '  <div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' +
+              dishName + '</div>';
+      cell += '  <button class="' + btnClass + '"></button>';
+      cell += allergyDisplay;
+      cell += '  <div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>';
+      cell += '  <div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>';
+      if (idx === dishNames.length - 1 && dishName === '甘味') {
+        cell += sweetTag;
+      }
+      cell += '</div>';
+      return cell;
+    }).join('');
 
-      return cellHtml;
-    }).join(''); // dishNames.map の閉じ
+    row += '</div>'; // room-row
+    return row;
+  }).join('');
 
-    // 行HTML
-    const rowHtml =
-      '<div class="room-row" data-plan="' + esc(r.plan || '') + '" data-room-name="' + esc(r.name) +
-      '" data-time-group="' + time + '" style="display:grid;grid-template-columns:' + gridColumns +
-      ';gap:6px;align-items:center;padding:6px 8px;border-bottom:1px dashed #eee;background:' + planBg + ';">' +
-        '<div>' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
-            speedSelector +
-            '<strong style="font-size:20px;font-weight:900;">' + esc(r.name) + '</strong>' +
-            guestTag +
-          '</div>' +
-          '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">' +
-            planTag +
-            sweetTag +
-            memoArea +
-          '</div>' +
-        '</div>' +
-        cellsHtml +
-      '</div>';
+  out += '</div>'; // .table like
+  out += '</div>'; // .time-group
+  return out;
+};
 
-    return rowHtml;
-  }).join(''); // list.map の閉じ
+// ==== 以降はそのまま ====
 
-  // グループ全体（時刻ヘッダ＋テーブル）
-  const wrapperHtml =
-    '<div class="time-group" style="border-bottom:' + (isLast ? 'none' : '1px solid #e0e0e0') +
-    '; padding-bottom:8px; margin-bottom:' + (isLast ? '0' : '8px') + ';">' +
-      '<h2 class="time-group-header" style="margin:4px 0 6px 0; font-size:13px; color:#999; font-weight:normal;">' +
-        time + '</h2>' +
-      '<div class="table like">' +
-        roomsHtml +
-      '</div>' +
-    '</div>';
-
-  return wrapperHtml;
-}; // groupHtml の閉じ
-
-// ← ここから外側
-const times = ['18:00', '18:30', '19:00'];
-const html = times.map((time, idx) =>
-  groupHtml(time, byTime[time], idx === times.length - 1)
-).join('');
-
-const root = document.getElementById('boards');
+// 時刻ごとに groupHtml を並べて boards に流し込む
+const times = ['18:00','18:30','19:00'];
+const html  = times.map((time, idx) => groupHtml(time, byTime[time], idx === times.length - 1)).join('');
+const root  = document.getElementById('boards');
 if (root && html.trim()) {
   root.innerHTML = html;
 }
+
 
 
       // 食事スピードセレクターとメモ欄を各部屋に追加
@@ -1455,8 +1439,9 @@ function addPlanTagsToDots() {}
 // グローバルに公開
 window.updateKitchenDisplay = updateKitchenDisplay;
 
-// 初期実行
+// ==== 初期実行 ====
 document.addEventListener('DOMContentLoaded', () => {
+  // 画面描画（設定があれば設定から／なければデフォルト）
   const data = loadSettings();
   if (data) {
     renderFromSettings(data);
@@ -1464,7 +1449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderBoardV3();
   }
 
-  // タブ切替でキッチン表示を再計算
+  // タブ切替でキッチン表示を更新
   const tabKitchen = document.getElementById('tab-kitchen');
   if (tabKitchen) {
     tabKitchen.addEventListener('click', () => {
@@ -1472,22 +1457,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 初回表示
+  // 初回のキッチン更新
   updateKitchenDisplay();
 
-  // 丸ボタン／四角ボタンを押したら少し待って再計算
+  // 丸ボタン／四角ボタンのクリックでも更新
   document.addEventListener('click', (e) => {
     const t = e.target;
-    if (t && (t.classList?.contains('dotbtn') || t.classList?.contains('squarebtn'))) {
+    if (t && (t.classList.contains('dotbtn') || t.classList.contains('squarebtn'))) {
       setTimeout(updateKitchenDisplay, 300);
     }
   });
 
-  // 別タブ変更の反映
+  // 別タブの変更監視（localStorage）
   window.addEventListener('storage', (e) => {
     if (e.key === 'dinner.board.v3') {
       setTimeout(updateKitchenDisplay, 100);
-    } else if (e.key === 'room-settings.v1') {
+    }
+    if (e.key === 'room-settings.v1') {
       const newData = loadSettings();
       if (newData) renderFromSettings(newData);
       setTimeout(updateKitchenDisplay, 100);
@@ -1498,22 +1484,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetBtn = document.getElementById('btn-reset-today');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (!confirm('本日のデータをすべて初期化します。\n・丸ボタンの状態\n・ウェルダン情報\n・スタッフ情報\n・スピード設定\n・メモ欄\nすべてリセットされます。よろしいですか？')) return;
+      if (!confirm(
+        '本日のデータを初期化します。\n' +
+        '・丸ボタンの状態\n・ウェルダン情報\n・スタッフ情報\n・スピード設定\n・メモ欄\nすべてリセットされます。よろしいですか？'
+      )) return;
 
-      // 状態リセット
+      // 丸ボタン状態をリセット
       const state = resetBoardStatesToPendingV3();
 
-      // 古いキー掃除
+      // 旧キーも念のため削除
       localStorage.removeItem('dinner.board.v2');
       localStorage.removeItem(`board-state.v1:${new Date().toISOString().slice(0,10)}`);
 
-      // speed- / memo- を一掃
+      // speed- / memo- のキーを一括削除
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k && (k.startsWith('speed-') || k.startsWith('memo-'))) keysToRemove.push(k);
       }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      keysToRemove.forEach(k => localStorage.removeItem(k));
       console.log('初期化完了: ' + keysToRemove.length + '個のスピード・メモ設定を削除しました。');
 
       // 画面再描画
@@ -1524,11 +1513,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBoardV3(state);
       }
 
-      // キッチン表示も更新
       setTimeout(updateKitchenDisplay, 100);
-
       alert('リセットしました！\n・すべての丸ボタンが「未」になります');
     });
   }
 }); // ← DOMContentLoaded の閉じ
-})(); // ← IIFE の閉じ（ファイル末尾）
+})(); // ← IIFE の閉じ（ファイル終端）
