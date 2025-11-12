@@ -1455,97 +1455,89 @@ function addPlanTagsToDots() {}
   // グローバルに公開
   window.updateKitchenDisplay = updateKitchenDisplay;
 
-  // 初期実行
-  document.addEventListener('DOMContentLoaded', () => {
-    const data = loadSettings();
-    if (data) {
-      renderFromSettings(data);
-    } else {
-      renderBoardV3();
-    }
+ // === 本日のデータ初期化 & 画面再描画（確定版） =========================
+document.addEventListener('DOMContentLoaded', () => {
+  // 初期表示
+  const data = loadSettings();
+  if (data) {
+    renderFromSettings(data);
+  } else {
+    renderBoardV3();
+  }
 
-    // タブ切り替え時にキッチン表示を更新
-    const tabKitchen = document.getElementById('tab-kitchen');
-    if (tabKitchen) {
-      tabKitchen.addEventListener('click', () => {
-        setTimeout(updateKitchenDisplay, 100);
-      });
-    }
-
-    // 初回表示
-    updateKitchenDisplay();
-
-    // ボタンクリック時もキッチン表示を更新（リアルタイム反映）
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('dotbtn') || e.target.classList.contains('squarebtn')) {
-        setTimeout(updateKitchenDisplay, 300);
-      }
+  // タブ切替でキッチン表示を更新
+  const tabKitchen = document.getElementById('tab-kitchen');
+  if (tabKitchen) {
+    tabKitchen.addEventListener('click', () => {
+      setTimeout(updateKitchenDisplay, 100);
     });
+  }
 
-    // === 🔥 別タブでのデータ変更を検知する機能（追加） ===
-    // 別のブラウザタブでlocalStorageが変更されたら、このタブも自動的に更新する
-    window.addEventListener('storage', (e) => {
-      console.log('📡 別タブでデータが変更されました:', e.key);
-      
-      // dinner.board.v3 が変更されたらキッチン表示を更新
-      if (e.key === 'dinner.board.v3') {
-        console.log('🔄 キッチン表示を自動更新します');
-        setTimeout(updateKitchenDisplay, 100);
-      }
-      
-      // 設定が変更されたら画面全体を再描画
-      if (e.key === 'room-settings.v1') {
-        console.log('🔄 設定が変更されたので画面を再描画します');
-        const newData = loadSettings();
-        if (newData) {
-          renderFromSettings(newData);
+  // 初回のキッチン描画
+  updateKitchenDisplay();
+
+  // 丸ボタン/四角ボタンのクリック後にキッチン更新
+  document.addEventListener('click', (e) => {
+    const el = e.target;
+    if (el && (el.classList.contains('dotbtn') || el.classList.contains('squarebtn'))) {
+      setTimeout(updateKitchenDisplay, 300);
+    }
+  });
+
+  // === 別タブでの変更を監視（localStorageのchange） ===================
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'dinner.board.v3') {
+      setTimeout(updateKitchenDisplay, 100);
+    }
+    if (e.key === 'room-settings.v1') {
+      const newData = loadSettings();
+      if (newData) renderFromSettings(newData);
+      setTimeout(updateKitchenDisplay, 100);
+    }
+  });
+
+  // === リセット（本日のデータ初期化） ===============================
+  const resetBtn = document.getElementById('btn-reset-today');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!confirm(
+        "本日のデータをすべて初期化します。\n" +
+        "・丸ボタンの状態\n・ウェルダン情報\n・スタッフ情報\n・スピード設定\n・メモ欄\n" +
+        "すべてリセットされます。よろしいですか？"
+      )) return;
+
+      // 丸ボタン状態を「未」に戻す
+      const state = resetBoardStatesToPendingV3();
+
+      // 旧フォーマットも念のため削除
+      localStorage.removeItem('dinner.board.v2');
+      localStorage.removeItem(`board-state.v1:${new Date().toISOString().slice(0,10)}`);
+
+      // speed-* と memo-* を削除
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('speed-') || key.startsWith('memo-'))) {
+          keysToRemove.push(key);
         }
-        setTimeout(updateKitchenDisplay, 100);
       }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      console.log('初期化完了: ' + keysToRemove.length + '個のスピード・メモ設定を削除しました。');
+
+      // 画面再描画
+      const currentData = loadSettings();
+      if (currentData) {
+        renderFromSettings(currentData);
+      } else {
+        renderBoardV3(state);
+      }
+
+      // キッチン表示更新
+      setTimeout(updateKitchenDisplay, 100);
+
+      alert('リセットしました！\n・すべての丸ボタンが「未」になります');
     });
-    
-    console.log('✅ 別タブ監視機能を有効化しました！');
+  }
+}); // ← DOMContentLoaded の閉じ
 
-    // === リセットボタン（改善版） ===
-    const resetBtn = document.getElementById("btn-reset-today");
-    if(resetBtn){
-      resetBtn.addEventListener("click", () => {
-        if (!confirm("本日のデータをすべて初期化します。\n・丸ボタンの状態\n・ウェルダン情報\n・スタッフ情報\n・スピード設定\n・メモ欄\nすべてリセットされます。よろしいですか？")) return;
-
-        // 状態をリセット
-        const state = resetBoardStatesToPendingV3();
-        
-        // 古い形式のデータも削除
-        localStorage.removeItem("dinner.board.v2");
-        localStorage.removeItem(`board-state.v1:${new Date().toISOString().slice(0,10)}`);
-        
-        // スピード設定とメモ欄を初期化
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          // speed-で始まるキー、またはmemo-で始まるキーを削除対象にする
-          if (key && (key.startsWith('speed-') || key.startsWith('memo-'))) {
-            keysToRemove.push(key);
-          }
-        }
-      // 削除実行
-keysToRemove.forEach(key => localStorage.removeItem(key));
-
-// ログ出力（テンプレ文字列→通常文字列に直す）
-console.log('初期化完了: ' + keysToRemove.length + '個のスピード・メモ設定を削除しました。');
-
-// 画面を再描画
-const currentData = loadSettings();
-if (currentData) {
-  renderFromSettings(currentData);
-} else {
-  renderBoardV3(state);
-}
-
-// キッチン表示も更新
-setTimeout(updateKitchenDisplay, 100);
-
-  alert('リセットしました！\n・すべての丸ボタンが「未」になります');
-}); // resetBtn.addEventListener('click', ...) の閉じ
-
-})(); // IIFE の閉じ（ファイルはここで終了）
+})(); // ← IIFE の閉じ（ファイルはここで終了）
