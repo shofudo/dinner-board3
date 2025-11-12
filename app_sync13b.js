@@ -1535,9 +1535,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // キッチン表示更新
       setTimeout(updateKitchenDisplay, 100);
 
-      alert('リセットしました！\n・すべての丸ボタンが「未」になります');
-    });
-  }
-}); // ← DOMContentLoaded の閉じ
-
-})(); // ← IIFE の閉じ（ファイルはここで終了）
+           alert('リセットしました！\n・すべての丸ボタンが「未」になります');
+    }); // resetBtn.addEventListener('click', ...) の閉じ
+  } // if (resetBtn) の閉じ
+}); // DOMContentLoaded の閉じ
+})(); // IIFE の閉じ（ファイルはここで終了）
