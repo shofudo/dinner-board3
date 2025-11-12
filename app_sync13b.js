@@ -454,7 +454,42 @@ if (window.__db) {
     if (minutes === 'voice') {
       return '声がけ';
     }
-    
+    // minutes を保存して、セル内の時刻表示を更新する共通関数
+function saveAndRenderWaitTime(groupId, roomId, colIdx, minutes, cellEl) {
+  if (minutes === null) return;
+minutes = (minutes === 'voice') ? 'voice' : Number(minutes);
+  // 1) 保存
+  const st = loadBoardV3();
+  if (!st[groupId][roomId].waitTime) st[groupId][roomId].waitTime = {};
+  st[groupId][roomId].waitTime[colIdx] = minutes;
+  saveBoardV3(st);
+
+  // 2) 表示DOMを用意
+  let timeLine = cellEl.querySelector('.js-time');
+  if (!timeLine) {
+    timeLine = document.createElement('div');
+    timeLine.className = 'js-time';
+    cellEl.appendChild(timeLine);
+  }
+window.saveAndRenderWaitTime = saveAndRenderWaitTime;
+  // 3) 表示を更新（+◯分 → 未来時刻 / 「声がけ」）
+  const displayTime = calculateWaitTime(minutes);
+  timeLine.textContent = displayTime;
+  timeLine.style.fontSize = '16px';
+  timeLine.style.color = '#d32f2f';
+  timeLine.style.fontWeight = 'bold';
+  timeLine.style.marginTop = '4px';
+  timeLine.style.cursor = 'pointer';
+
+  // 4) クリックで再選択できるように
+  timeLine.onclick = (e) => {
+    e.stopPropagation();
+    showWaitTimePopup(groupId, roomId, colIdx, (newMin) => {
+      saveAndRenderWaitTime(groupId, roomId, colIdx, newMin, cellEl);
+    });
+  };
+}
+
     const now = new Date();
     const targetTime = new Date(now.getTime() + parseInt(minutes) * 60000);
     return hhmm(targetTime);
@@ -907,29 +942,14 @@ if (window.__db) {
           if (isSimpleDish) {
             // 3段階遷移: 未→待→済→未
             if (prev === "未") {
-              next = "待";
-              // 待になったとき時間選択ポップアップを表示
-              showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
-                if (minutes !== null) {
-                  const st = loadBoardV3();
-                  if (!st[groupId][roomId].waitTime) st[groupId][roomId].waitTime = {};
-                  st[groupId][roomId].waitTime[colIdx] = minutes;
-                  saveBoardV3(st);
-                  
-                  // 時刻表示を更新
-                  const cellEl = btn.closest('td') || btn.parentElement;
-                  let timeLine = cellEl.querySelector('.js-time');
-                  if (timeLine) {
-                    const displayTime = calculateWaitTime(minutes);
-                    timeLine.textContent = displayTime;
-                    // 待の状態の時間表示を大きく赤色に
-                    timeLine.style.fontSize = '16px';
-                    timeLine.style.color = '#d32f2f';
-                    timeLine.style.fontWeight = 'bold';
-                    timeLine.style.marginTop = '4px';
-                  }
-                }
-              });
+             next = "待"; // ※ isMeatDish のときだけ「未→肉」なら next = "肉";
+showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
+  const cellEl =
+    btn.closest('.cell') || btn.closest('.td') || btn.closest('td') || btn.parentElement;
+  saveAndRenderWaitTime(groupId, roomId, colIdx, minutes, cellEl);
+});
+
+
             } else if (prev === "待") {
               next = "済";
               // 済になったときスタッフ選択
@@ -962,88 +982,76 @@ if (window.__db) {
           } else {
             // 煮物とステーキは5段階遷移: 未→肉→待→注→済→未
             // その他は4段階遷移: 未→待→注→済→未
-            const isMeatDish = dishName === '煮物' || dishName === 'ステーキ';
-            
-            if (isMeatDish) {
-              // === 肉料理の5段階遷移 ===
-              if (prev === "未") {
-                next = "肉";
-                // 肉になったとき時間選択ポップアップを表示
-                showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
-                  if (minutes !== null) {
-                    const st = loadBoardV3();
-                    if (!st[groupId][roomId].waitTime) st[groupId][roomId].waitTime = {};
-                    st[groupId][roomId].waitTime[colIdx] = minutes;
-                    saveBoardV3(st);
-                  }
-                });
-              } else if (prev === "肉") {
-                next = "待";
-                // 待になったとき、ウェルダン選択ポップアップを表示
-                showWelldonePopup(groupId, roomId, colIdx, (count) => {
-                  if (count !== null) {
-                    const st = loadBoardV3();
-                    if (!st[groupId][roomId].welldone) st[groupId][roomId].welldone = {};
-                    st[groupId][roomId].welldone[colIdx] = count;
-                    saveBoardV3(st);
-                    if (welldoneDisplay) {
-                      welldoneDisplay.textContent = count > 0 ? `W×${count}名` : '';
-                      welldoneDisplay.style.display = count > 0 ? 'block' : 'none';
-                    }
-                  }
-                });
-              } else if (prev === "待") {
-                next = "注";
-              } else if (prev === "注") {
-                next = "済";
-                // 済になったときスタッフ選択
-                showStaffPopup(groupId, roomId, colIdx, (staff) => {
-                  const st = loadBoardV3();
-                  if (!st[groupId][roomId].staff) st[groupId][roomId].staff = {};
-                  st[groupId][roomId].staff[colIdx] = staff;
-                  saveBoardV3(st);
-                  if (staffDisplay) {
-                    staffDisplay.textContent = staff;
-                    staffDisplay.style.display = 'block';
-                  }
-                });
-              } else {
-                next = "未";
-                // 未に戻したらウェルダン、スタッフ情報、待ち時間を削除
-                const st = loadBoardV3();
-                if (st[groupId][roomId].welldone) {
-                  delete st[groupId][roomId].welldone[colIdx];
-                }
-                if (st[groupId][roomId].staff) {
-                  delete st[groupId][roomId].staff[colIdx];
-                }
-                if (st[groupId][roomId].waitTime) {
-                  delete st[groupId][roomId].waitTime[colIdx];
-                }
-                saveBoardV3(st);
-                if (welldoneDisplay) {
-                  welldoneDisplay.textContent = '';
-                  welldoneDisplay.style.display = 'none';
-                }
-                if (staffDisplay) {
-                  staffDisplay.textContent = '';
-                  staffDisplay.style.display = 'none';
-                }
-              }
-            } else {
+           // 煮物とステーキは5段階遷移: 未→肉→待→注→済→未
+const isMeatDish = dishName === '煮物' || dishName === 'ステーキ';
+
+if (isMeatDish) {
+  // === 肉料理の5段階遷移 ===
+  if (prev === "未") {
+    next = "待"; // ※ isMeatDish のときだけ「未→肉」なら next = "肉";
+showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
+  const cellEl =
+    btn.closest('.cell') || btn.closest('.td') || btn.closest('td') || btn.parentElement;
+  saveAndRenderWaitTime(groupId, roomId, colIdx, minutes, cellEl);
+});
+
+
+  } else if (prev === "肉") {
+    next = "待";
+    // 肉→待：ウェルダン人数
+    showWelldonePopup(groupId, roomId, colIdx, (count) => {
+      if (count !== null) {
+        const st = loadBoardV3();
+        if (!st[groupId][roomId].welldone) st[groupId][roomId].welldone = {};
+        st[groupId][roomId].welldone[colIdx] = count;
+        saveBoardV3(st);
+        if (welldoneDisplay) {
+          welldoneDisplay.textContent = count > 0 ? `W×${count}名` : '';
+          welldoneDisplay.style.display = count > 0 ? 'block' : 'none';
+        }
+      }
+    });
+
+  } else if (prev === "待") {
+    next = "注";
+
+  } else if (prev === "注") {
+    next = "済";
+    // 注→済：スタッフ選択
+    showStaffPopup(groupId, roomId, colIdx, (staff) => {
+      const st = loadBoardV3();
+      if (!st[groupId][roomId].staff) st[groupId][roomId].staff = {};
+      st[groupId][roomId].staff[colIdx] = staff;
+      saveBoardV3(st);
+      if (staffDisplay) {
+        staffDisplay.textContent = staff;
+        staffDisplay.style.display = 'block';
+      }
+    });
+
+  } else {
+    next = "未";
+    // リセット：関連情報クリア
+    const st = loadBoardV3();
+    if (st[groupId][roomId].welldone) delete st[groupId][roomId].welldone[colIdx];
+    if (st[groupId][roomId].staff)    delete st[groupId][roomId].staff[colIdx];
+    if (st[groupId][roomId].waitTime) delete st[groupId][roomId].waitTime[colIdx];
+    saveBoardV3(st);
+    if (welldoneDisplay) { welldoneDisplay.textContent = ''; welldoneDisplay.style.display = 'none'; }
+    if (staffDisplay)    { staffDisplay.textContent    = ''; staffDisplay.style.display    = 'none'; }
+  }
+} else {
+  // ←この else { から下は「通常料理の4段階遷移」なので残す
+
               // === 通常料理の4段階遷移 ===
               if (prev === "未") {
-                next = "待";
-                
-                // 待になったとき時間選択ポップアップを表示
-                showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
-                  if (minutes !== null) {
-                    const st = loadBoardV3();
-                    if (!st[groupId][roomId].waitTime) st[groupId][roomId].waitTime = {};
-                    st[groupId][roomId].waitTime[colIdx] = minutes;
-                    saveBoardV3(st);
-                  }
-                });
+              next = "待"; // ※ isMeatDish のときだけ「未→肉」なら next = "肉";
+showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
+  const cellEl =
+    btn.closest('.cell') || btn.closest('.td') || btn.closest('td') || btn.parentElement;
+  saveAndRenderWaitTime(groupId, roomId, colIdx, minutes, cellEl);
+});
+
               } else if (prev === "待") {
                 next = "注";
               } else if (prev === "注") {
