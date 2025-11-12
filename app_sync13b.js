@@ -662,14 +662,12 @@ if (window.__db) {
     };
 
 const groupHtml = (time, list, isLast) => {
-  // 見出し
   let out = '';
   out += '<div class="time-group" style="border-bottom:' + (isLast ? 'none' : '1px solid #e0e0e0') +
          ';padding-bottom:8px;margin-bottom:' + (isLast ? '0' : '8px') + ';">';
   out += '<h2 class="time-group-header" style="margin:4px 0 6px 0;font-size:13px;color:#999;font-weight:normal;">' + time + '</h2>';
   out += '<div class="table like">';
 
-  // 1行ずつ
   out += list.map((r) => {
     const planBg   = (planColors[r.plan] || '#f5f5f5');
     const tagColor = (planTagColors[r.plan] || { bg:'#757575', color:'#fff' });
@@ -686,7 +684,7 @@ const groupHtml = (time, list, isLast) => {
                      : ['吸物','刺身','蒸物','揚物','煮物','飯','甘味'];
 
     const dishNames = insertExtraDishes(baseDishes, data.extraDishes, r.name);
-    r.dishNames = dishNames; // キッチン表示用に保持
+    r.dishNames = dishNames;
 
     const extraDishSet = new Set((data.extraDishes || []).map(d => d.name));
 
@@ -700,14 +698,13 @@ const groupHtml = (time, list, isLast) => {
 
     const gridColumns = '240px repeat(' + dishNames.length + ',1fr)';
 
-    // 行
+    // 行: 左側（部屋ラベル）
     let row = '';
     row += '<div class="room-row" data-plan="' + esc(r.plan || '') +
            '" data-room-name="' + esc(r.name) + '" data-time-group="' + time +
            '" style="display:grid;grid-template-columns:' + gridColumns +
            ';gap:6px;align-items:center;padding:6px 8px;border-bottom:1px dashed #eee;background:' + planBg + ';">';
 
-    // 左側（部屋名・人数・タグ・メモ）
     row += '<div>';
     row += '  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
            '<div class="speed-wrap"></div>' +
@@ -719,7 +716,7 @@ const groupHtml = (time, list, isLast) => {
 
     // 料理セル
     row += dishNames.map((dishName, idx) => {
-      // --- アレルギー表示の判定 ---
+      // --- アレルギー抽出 ---
       const DISH_EQUIV = {
         '揚物': new Set(['揚物','揚げ物','フライ','天ぷら']),
         'フライ': new Set(['揚物','揚げ物','フライ','天ぷら']),
@@ -742,9 +739,7 @@ const groupHtml = (time, list, isLast) => {
             const target = norm(targetRaw);
             const dname  = norm(dishName);
             let hit = (target === dname);
-            if (!hit && DISH_EQUIV[dname]) {
-              hit = DISH_EQUIV[dname].has(target);
-            }
+            if (!hit && DISH_EQUIV[dname]) hit = DISH_EQUIV[dname].has(target);
             if (!hit) {
               const lite = (x) => x.replace(/[\s　]/g, '');
               hit = (lite(target) === lite(dname));
@@ -763,28 +758,25 @@ const groupHtml = (time, list, isLast) => {
 
       let cell = '';
       cell += '<div class="cell" data-group="' + time +
-        '" data-room="' + esc(r.name) +
-        '" data-col="' + String(idx) + '"' +
-        ' data-dish="' + dishName + '">';
-      cell += '  <div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' +
-              dishName + '</div>';
+              '" data-room="' + esc(r.name) +
+              '" data-col="' + String(idx) + '"' +
+              ' data-dish="' + dishName + '">';
+      cell += '  <div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' + dishName + '</div>';
       cell += '  <button class="' + btnClass + '"></button>';
       cell += allergyDisplay;
       cell += '  <div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>';
       cell += '  <div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>';
-      if (idx === dishNames.length - 1 && dishName === '甘味') {
-        cell += sweetTag;
-      }
+      if (idx === dishNames.length - 1 && dishName === '甘味') cell += sweetTag;
       cell += '</div>';
       return cell;
     }).join('');
 
     row += '</div>'; // room-row
     return row;
-  }).join('');
+  }).join('');      // ← list.map の閉じ
 
-  out += '</div>'; // .table like
-  out += '</div>'; // .time-group
+  out += '</div>';  // .table like
+  out += '</div>';  // .time-group
   return out;
 };
 
