@@ -1181,18 +1181,17 @@ if (root && html.trim()) {
           btn.textContent = next;
           btn.setAttribute('data-state', next);
           
-          // キッチン表示を更新
-          if (typeof window.updateKitchenDisplay === 'function') {
-            window.updateKitchenDisplay();
-          }
-        });
-      });
+    // キッチン表示を更新
+    if (typeof window.updateKitchenDisplay === 'function') {
+      window.updateKitchenDisplay();
     }
-  }
+  }); // btn.addEventListener('click', ...) の閉じ
+});   // root.querySelectorAll('.cell').forEach(...) の閉じ
 
 /* ==== プラン名タグ追加機能は無効化（料理名の下に直接表示するため不要） ==== */
 // 使わないのでダミー実装（構文エラー回避）
 function addPlanTagsToDots() {}
+
 
 
 
@@ -1546,6 +1545,7 @@ if (currentData) {
 // キッチン表示も更新
 setTimeout(updateKitchenDisplay, 100);
 
-alert('リセットしました！\n・すべての丸ボタンが「未」になります');
-})(); // IIFE おわり（ファイル末尾はここで終了）
+  alert('リセットしました！\n・すべての丸ボタンが「未」になります');
+}); // resetBtn.addEventListener('click', ...) の閉じ
 
+})(); // IIFE の閉じ（ファイルはここで終了）
