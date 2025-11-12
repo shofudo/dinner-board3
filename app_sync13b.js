@@ -726,42 +726,56 @@ if (window.__db) {
                     if (r.allergies && Array.isArray(r.allergies)) {
                       r.allergies.forEach(allergy => {
                         // 料理名のマッピング（本日の設定で使われる名称 → 実際の料理名）
-                        const dishMapping = {
-                          '吸物': '吸物',
-                          '果菜盛': '果菜盛',
-                          '蒸物': '蒸物',
-                          '揚物': '揚物',
-                          '煮物': '煮物',
-                          '飯': 'ご飯',
-                          'ご飯': 'ご飯',
-                          '甘味': '甘味',
-                          // プラン別の追加料理
-                          'ステーキ': 'ステーキ',
-                          'しゃぶしゃぶ': 'しゃぶしゃぶ',
-                          '茶碗蒸し': '茶碗蒸し',
-                          '牛たたき': '牛たたき',
-                          '焼物': '焼物',
-                          '小鉢': '小鉢',
-                          'フライ': 'フライ',
-                          'すき焼き': 'すき焼き',
-                          '単品ステーキ': '単品ステーキ'
-                        
-                        };
-                        // この料理がアレルギーの対象かチェック
-                        if (allergy.targets && allergy.targets.length > 0) {
-                          allergy.targets.forEach(target => {
-                            if (dishMapping[target] === dishName) {
-                              allergyNotes.push(allergy.name);
-                            }
-                          });
-                        }
-                      });
-                    }
-                    
-                    // アレルギー表示用HTML（丸ボタンの下に表示）
-                    const allergyDisplay = allergyNotes.length > 0 
-                      ? `<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">${allergyNotes.join('・')}NG</div>`
-                      : '';
+ // === 同義語マップ＆正規化 ===
+const DISH_EQUIV = {
+  "揚物": new Set(["揚物","揚げ物","フライ","天ぷら"]),
+  "フライ": new Set(["揚物","揚げ物","フライ","天ぷら"]),
+  "飯": new Set(["飯","ご飯","ライス"]),
+  "ご飯": new Set(["飯","ご飯","ライス"]),
+  "すき焼き": new Set(["すき焼き","すきやき"]),
+  "しゃぶしゃぶ": new Set(["しゃぶしゃぶ","しゃぶ"]),
+  "焼物": new Set(["焼物","焼き物"]),
+  "茶碗蒸し": new Set(["茶碗蒸し","ちゃわん蒸し"]),
+  "牛たたき": new Set(["牛たたき","牛タタキ"]),
+  "ステーキ": new Set(["ステーキ","単品ステーキ","牛ステーキ"])
+};
+const norm = (s) => String(s || "").trim();
+
+// --- 料理ごとのアレルギーを収集 ---
+let allergyNotes = [];
+if (r.allergies && Array.isArray(r.allergies)) {
+  r.allergies.forEach(allergy => {
+    if (allergy.targets && allergy.targets.length > 0) {
+      allergy.targets.forEach(targetRaw => {
+        const target = norm(targetRaw);
+        const dname = norm(dishName);
+
+        // 完全一致
+        let hit = target === dname;
+
+        // 同義語マッチ
+        if (!hit && DISH_EQUIV[dname]) {
+          hit = DISH_EQUIV[dname].has(target);
+        }
+
+        // ゆれ対策（スペース除去など）
+        if (!hit) {
+          const lite = (x) => x.replace(/[\s　]/g, "");
+          hit = lite(target) === lite(dname);
+        }
+
+        if (hit) {
+          allergyNotes.push(allergy.name);
+        }
+      });
+    }
+  });
+}
+
+const allergyDisplay = allergyNotes.length > 0
+  ? `<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">${allergyNotes.join('・')}NG</div>`
+  : '';
+
                     
                     // 追加料理は四角ボタン、通常料理は丸ボタン
                     const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
