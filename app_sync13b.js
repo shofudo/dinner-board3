@@ -773,8 +773,10 @@ if (r.allergies && Array.isArray(r.allergies)) {
 }
 
 const allergyDisplay = allergyNotes.length > 0
-  ? `<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">${allergyNotes.join('・')}NG</div>`
+  ? '<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">'
+    + allergyNotes.join("・") + 'NG</div>'
   : '';
+
 
                     
                     // 追加料理は四角ボタン、通常料理は丸ボタン
