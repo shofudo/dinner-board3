@@ -661,146 +661,160 @@ if (window.__db) {
       '連泊': { bg: '#9C27B0', color: '#fff' }
     };
 
-    const groupHtml = (time, list, isLast) => {
-      return `
-        <div class="time-group" style="border-bottom: ${isLast ? 'none' : '1px solid #e0e0e0'}; padding-bottom: 8px; margin-bottom: ${isLast ? '0' : '8px'};">
-          <h2 class="time-group-header" style="margin:4px 0 6px 0; font-size:13px; color:#999; font-weight:normal;">${time}</h2>
-          <div class="table like">
-            ${list.map(r=>{
-              const planBg = planColors[r.plan] || '#f5f5f5';
-              const tagColor = planTagColors[r.plan] || { bg: '#757575', color: '#fff' };
-              
-              // 人数タグを大きく表示
-              const guestTag = r.guest ? `<span class="guest-tag" style="display:inline-block; font-size:20px; font-weight:900; padding:4px 12px; background:${tagColor.bg}; color:${tagColor.color}; border-radius:6px;">${r.guest}名</span>` : "";
-              
-              // プランタグ
-              const planTag = r.plan ? `<span class="plan-tag" style="display:inline-block; font-size:11px; padding:2px 8px; background:${tagColor.bg}; color:${tagColor.color}; border-radius:4px;">${esc(r.plan)}</span>` : "";
+const groupHtml = (time, list, isLast) => {
+  // 各部屋(row)のHTML
+  const roomsHtml = list.map((r) => {
+    const planBg   = (planColors[r.plan] || '#f5f5f5');
+    const tagColor = (planTagColors[r.plan] || { bg: '#757575', color: '#fff' });
 
-              // プランごとの料理名を取得
-              const baseDishes = r.plan && planDishNames[r.plan] ? planDishNames[r.plan] : ["吸物","刺身","蒸物","揚物","煮物","飯","甘味"];
-              
-              // 追加料理を挿入
-              const dishNames = insertExtraDishes(baseDishes, data.extraDishes, r.name);
-              
-              // 部屋データにdishNamesを保存(キッチン表示で使用)
-              r.dishNames = dishNames;
-              
-              // どの料理が追加料理かを判定するためのセット
-              const extraDishNames = new Set(data.extraDishes?.map(d => d.name) || []);
+    // 人数タグ
+    const guestTag = r.guest
+      ? ('<span class="guest-tag" style="display:inline-block; font-size:20px; font-weight:900; padding:4px 12px; background:' +
+          tagColor.bg + '; color:' + tagColor.color + '; border-radius:6px;">' + r.guest + '名</span>')
+      : '';
 
-              // ケーキ・プレート表示
-              let sweetTag = '';
-              if (r.plan && (r.cake || r.plate)) {
-                sweetTag = `<span class="tag note" style="font-size:11px; margin-left:6px;">${[r.cake?"ケーキ":null, r.plate?"プレート":null].filter(Boolean).join("・")}</span>`;
+    // プランタグ
+    const planTag = r.plan
+      ? ('<span class="plan-tag" style="display:inline-block; font-size:11px; padding:2px 8px; background:' +
+          tagColor.bg + '; color:' + tagColor.color + '; border-radius:4px;">' + esc(r.plan) + '</span>')
+      : '';
+
+    // プランの料理名
+    const baseDishes = (r.plan && planDishNames[r.plan]) ? planDishNames[r.plan] : ['吸物','刺身','蒸物','揚物','煮物','飯','甘味'];
+    const dishNames  = insertExtraDishes(baseDishes, data.extraDishes, r.name);
+    r.dishNames = dishNames; // キッチン表示用に保存
+
+    // 追加料理名セット
+    const extraDishNames = new Set((data.extraDishes || []).map(d => d.name));
+
+    // ケーキ/プレート
+    let sweetTag = '';
+    if (r.plan && (r.cake || r.plate)) {
+      const arr = [];
+      if (r.cake)  arr.push('ケーキ');
+      if (r.plate) arr.push('プレート');
+      sweetTag = '<span class="tag note" style="font-size:11px; margin-left:6px;">' + arr.join('・') + '</span>';
+    }
+
+    // 左側のプレースホルダ
+    const speedSelector = '<div class="speed-wrap"></div>';
+    const memoArea      = '<div class="memo-wrap"></div>';
+
+    // 列レイアウト
+    const gridColumns = '240px repeat(' + dishNames.length + ',1fr)';
+
+    // === 各料理セル ===
+    const cellsHtml = dishNames.map((dishName, idx) => {
+      // 料理ごとのアレルギー抽出
+      const DISH_EQUIV = {
+        '揚物': new Set(['揚物','揚げ物','フライ','天ぷら']),
+        'フライ': new Set(['揚物','揚げ物','フライ','天ぷら']),
+        '飯': new Set(['飯','ご飯','ライス']),
+        'ご飯': new Set(['飯','ご飯','ライス']),
+        'すき焼き': new Set(['すき焼き','すきやき']),
+        'しゃぶしゃぶ': new Set(['しゃぶしゃぶ','しゃぶ']),
+        '焼物': new Set(['焼物','焼き物']),
+        '茶碗蒸し': new Set(['茶碗蒸し','ちゃわん蒸し']),
+        '牛たたき': new Set(['牛たたき','牛タタキ']),
+        'ステーキ': new Set(['ステーキ','単品ステーキ','牛ステーキ'])
+      };
+      const norm = (s) => String(s || '').trim();
+
+      let allergyNotes = [];
+      if (r.allergies && Array.isArray(r.allergies)) {
+        r.allergies.forEach(allergy => {
+          if (allergy.targets && allergy.targets.length > 0) {
+            allergy.targets.forEach(targetRaw => {
+              const target = norm(targetRaw);
+              const dname  = norm(dishName);
+
+              // 完全一致
+              let hit = (target === dname);
+
+              // 同義語
+              if (!hit && DISH_EQUIV[dname]) hit = DISH_EQUIV[dname].has(target);
+
+              // ゆれ（空白除去）
+              if (!hit) {
+                const lite = (x) => x.replace(/[\s　]/g, '');
+                hit = (lite(target) === lite(dname));
               }
 
-              // 食事スピードセレクター（プレースホルダー）
-              const speedSelector = `<div class="speed-wrap"></div>`;
-              
-              // メモ欄（プレースホルダー）
-              const memoArea = `<div class="memo-wrap"></div>`;
+              if (hit) allergyNotes.push(allergy.name);
+            });
+          }
+        });
+      }
 
-              // グリッド列数を動的に調整（240px + 料理数×1fr）
-              const gridColumns = `240px repeat(${dishNames.length},1fr)`;
+      const allergyDisplay = (allergyNotes.length > 0)
+        ? ('<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">' +
+            allergyNotes.join('・') + 'NG</div>')
+        : '';
 
-              return `
-                <div class="room-row" data-plan="${esc(r.plan||'')}" data-room-name="${esc(r.name)}" data-time-group="${time}" style="display:grid;grid-template-columns:${gridColumns};gap:6px;align-items:center;padding:6px 8px;border-bottom:1px dashed #eee;background:${planBg};">
-                  <div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                      ${speedSelector}
-                      <strong style="font-size:20px;font-weight:900;">${esc(r.name)}</strong>
-                      ${guestTag}
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-                      ${planTag}
-                      ${sweetTag}
-                      ${memoArea}
-                    </div>
-                  </div>
-                  ${dishNames.map((dishName, idx) => {
-                    const dishKey = dishName;
-                    const isExtraDish = extraDishNames.has(dishName);
-                    
-                    // この料理に該当するアレルギーを収集
-                    let allergyNotes = [];
-                    if (r.allergies && Array.isArray(r.allergies)) {
-                      r.allergies.forEach(allergy => {
-                        // 料理名のマッピング（本日の設定で使われる名称 → 実際の料理名）
- // === 同義語マップ＆正規化 ===
-const DISH_EQUIV = {
-  "揚物": new Set(["揚物","揚げ物","フライ","天ぷら"]),
-  "フライ": new Set(["揚物","揚げ物","フライ","天ぷら"]),
-  "飯": new Set(["飯","ご飯","ライス"]),
-  "ご飯": new Set(["飯","ご飯","ライス"]),
-  "すき焼き": new Set(["すき焼き","すきやき"]),
-  "しゃぶしゃぶ": new Set(["しゃぶしゃぶ","しゃぶ"]),
-  "焼物": new Set(["焼物","焼き物"]),
-  "茶碗蒸し": new Set(["茶碗蒸し","ちゃわん蒸し"]),
-  "牛たたき": new Set(["牛たたき","牛タタキ"]),
-  "ステーキ": new Set(["ステーキ","単品ステーキ","牛ステーキ"])
-};
-const norm = (s) => String(s || "").trim();
+      const isExtraDish = extraDishNames.has(dishName);
+      const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
 
-// --- 料理ごとのアレルギーを収集 ---
-let allergyNotes = [];
-if (r.allergies && Array.isArray(r.allergies)) {
-  r.allergies.forEach(allergy => {
-    if (allergy.targets && allergy.targets.length > 0) {
-      allergy.targets.forEach(targetRaw => {
-        const target = norm(targetRaw);
-        const dname = norm(dishName);
+      const cellHtml =
+        '<div class="cell" data-group="' + time + '" data-room="' + esc(r.name) + '" data-col="' + String(idx) + '">' +
+          '<div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' + dishName + '</div>' +
+          '<button class="' + buttonClass + '"></button>' +
+            allergyDisplay +
+          '<div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
+          '<div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
+          ((idx === dishNames.length - 1 && dishName === '甘味') ? sweetTag : '') +
+        '</div>';
 
-        // 完全一致
-        let hit = target === dname;
+      return cellHtml;
+    }).join(''); // dishNames.map の閉じ
 
-        // 同義語マッチ
-        if (!hit && DISH_EQUIV[dname]) {
-          hit = DISH_EQUIV[dname].has(target);
-        }
+    // 行HTML
+    const rowHtml =
+      '<div class="room-row" data-plan="' + esc(r.plan || '') + '" data-room-name="' + esc(r.name) +
+      '" data-time-group="' + time + '" style="display:grid;grid-template-columns:' + gridColumns +
+      ';gap:6px;align-items:center;padding:6px 8px;border-bottom:1px dashed #eee;background:' + planBg + ';">' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+            speedSelector +
+            '<strong style="font-size:20px;font-weight:900;">' + esc(r.name) + '</strong>' +
+            guestTag +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">' +
+            planTag +
+            sweetTag +
+            memoArea +
+          '</div>' +
+        '</div>' +
+        cellsHtml +
+      '</div>';
 
-        // ゆれ対策（スペース除去など）
-        if (!hit) {
-          const lite = (x) => x.replace(/[\s　]/g, "");
-          hit = lite(target) === lite(dname);
-        }
+    return rowHtml;
+  }).join(''); // list.map の閉じ
 
-        if (hit) {
-          allergyNotes.push(allergy.name);
-        }
-      });
-    }
-  });
+  // グループ全体（時刻ヘッダ＋テーブル）
+  const wrapperHtml =
+    '<div class="time-group" style="border-bottom:' + (isLast ? 'none' : '1px solid #e0e0e0') +
+    '; padding-bottom:8px; margin-bottom:' + (isLast ? '0' : '8px') + ';">' +
+      '<h2 class="time-group-header" style="margin:4px 0 6px 0; font-size:13px; color:#999; font-weight:normal;">' +
+        time + '</h2>' +
+      '<div class="table like">' +
+        roomsHtml +
+      '</div>' +
+    '</div>';
+
+  return wrapperHtml;
+}; // groupHtml の閉じ
+
+// ← ここから外側
+const times = ['18:00', '18:30', '19:00'];
+const html = times.map((time, idx) =>
+  groupHtml(time, byTime[time], idx === times.length - 1)
+).join('');
+
+const root = document.getElementById('boards');
+if (root && html.trim()) {
+  root.innerHTML = html;
 }
 
-// ★この3行をそっくり置き換え
-const allergyDisplay = (allergyNotes.length > 0)
-  ? ('<div class="allergy-display" style="font-size:10px;margin-top:2px;color:#d32f2f;font-weight:bold;">' + allergyNotes.join('・') + 'NG</div>')
-  : '';
-                    
-// 追加料理は四角、通常料理は丸
-const buttonClass = isExtraDish ? 'squarebtn' : 'dotbtn';
-
-// 1セル分のHTML（テンプレート/配列joinは使わない：全部連結）
-const cellHtml =
-  '<div class="cell" data-group="' + time + '" data-room="' + esc(r.name) + '" data-col="' + String(idx) + '">' +
-    '<div class="dishname" style="font-size:10px;min-height:12px;margin-bottom:2px;">' + dishName + '</div>' +
-    '<button class="' + buttonClass + '"></button>' +
-      allergyDisplay +
-    '<div class="welldone-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
-    '<div class="staff-display" style="font-size:10px;margin-top:2px;color:#666"></div>' +
-    ((idx === dishNames.length - 1 && dishName === '甘味') ? sweetTag : '') +
-  '</div>';
-
-return cellHtml;
-
-    const times = ["18:00", "18:30", "19:00"];
-    const html = times.map((time, idx) => 
-      groupHtml(time, byTime[time], idx === times.length - 1)
-    ).join("");
-
-    const root = document.getElementById('boards');
-    if(root && html.trim()){
-      root.innerHTML = html;
 
       // 食事スピードセレクターとメモ欄を各部屋に追加
       root.querySelectorAll('.room-row').forEach(row => {
@@ -1176,11 +1190,10 @@ return cellHtml;
     }
   }
 
-  /* ==== プラン名タグ追加機能は無効化（料理名の下に直接表示するため不要） ==== */
-  function addPlanTagsToDots(){
-    // この機能は使用しない
-    return;
-  }
+ /* ==== プラン名タグ追加機能は無効化（料理名の下に直接表示するため不要） ==== */
+// 使わないのでダミー実装（構文エラー回避）
+const addPlanTagsToDots = () => {};
+
 
   // === 音を鳴らす機能 ===
   function playNotificationSound() {
@@ -1515,25 +1528,23 @@ return cellHtml;
             keysToRemove.push(key);
           }
         }
-        // 削除実行
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        
-        console.log(`🧹 初期化完了: ${keysToRemove.length}個のスピード・メモ設定を削除しました`);
+      // 削除実行
+keysToRemove.forEach(key => localStorage.removeItem(key));
 
-        // 画面を再描画
-        const currentData = loadSettings();
-        if (currentData) {
-          renderFromSettings(currentData);
-        } else {
-          renderBoardV3(state);
-        }
-        
-        // キッチン表示も更新
-        setTimeout(updateKitchenDisplay, 100);
-        
-        alert('リセットしました！\n・すべての丸ボタンが「未」になりました\n・ウェルダン情報が削除されました\n・スタッフ情報が削除されました\n・スピード設定が初期化されました（全てN）\n・メモ欄が空になりました');
-      });
-    }
-  });
+// ログ出力（テンプレ文字列→通常文字列に直す）
+console.log('初期化完了: ' + keysToRemove.length + '個のスピード・メモ設定を削除しました。');
 
-})();
+// 画面を再描画
+const currentData = loadSettings();
+if (currentData) {
+  renderFromSettings(currentData);
+} else {
+  renderBoardV3(state);
+}
+
+// キッチン表示も更新
+setTimeout(updateKitchenDisplay, 100);
+
+alert('リセットしました！\n・すべての丸ボタンが「未」になります');
+})(); // IIFE おわり（ファイル末尾はここで終了）
+
