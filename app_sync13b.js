@@ -449,6 +449,7 @@ if (window.__db) {
     });
   }
 
+
   // 選択した待ち時間から表示時刻を計算する関数
   function calculateWaitTime(minutes) {
     if (minutes === 'voice') {
@@ -1535,5 +1536,56 @@ showWaitTimePopup(groupId, roomId, colIdx, (minutes) => {
       });
     }
   });
+// ===== ここから貼り付け（IIFEの最後の直前）=====
+
+// 待ち時間の保存＆再描画＆モーダル閉じ
+window.saveAndRenderWaitTime = function (groupId, roomId, colIdx, minutes) {
+  try {
+    const st = loadBoardV3();                   // いまの状態を取得
+    if (!st[groupId]) st[groupId] = {};
+    if (!st[groupId][roomId]) st[groupId][roomId] = {};
+    if (!st[groupId][roomId].waitTime) st[groupId][roomId].waitTime = {};
+
+    if (minutes === null) {
+      // 取り消し（「声がけ」やキャンセル想定）
+      delete st[groupId][roomId].waitTime[colIdx];
+    } else {
+      st[groupId][roomId].waitTime[colIdx] = minutes; // 分を保存
+    }
+
+    saveBoardV3(st);                           // 保存
+
+    // 画面を更新（存在する関数だけを安全に呼ぶ）
+    const settings =
+      typeof loadSettingsV3 === "function" ? loadSettingsV3() :
+      typeof loadSettings   === "function" ? loadSettings()   :
+      null;
+
+    if (typeof renderBoardV3 === "function") {
+      settings ? renderBoardV3(st, settings) : renderBoardV3(st);
+    } else if (typeof renderOrderBoard === "function") {
+      settings ? renderOrderBoard(st, settings) : renderOrderBoard(st);
+    } else if (typeof renderFromSettings === "function" && settings) {
+      // 予備：設定から再描画する実装がある場合
+      renderFromSettings(settings);
+    } else {
+      console.warn("再描画関数が見つからないためリロードします");
+      location.reload();
+    }
+
+  } catch (e) {
+    console.error("saveAndRenderWaitTime でエラー:", e);
+    alert("保存時にエラーが発生しました");
+  } finally {
+    window.closeWaitTimePopup();               // モーダルは必ず閉じる
+  }
+};
+
+// モーダルを閉じる（id='wait-time-modal' を想定）
+window.closeWaitTimePopup = function () {
+  const el = document.getElementById("wait-time-modal");
+  if (el) el.remove();
+};
+// ===== ここまで貼り付け =====
 
 })();
